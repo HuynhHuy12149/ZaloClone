@@ -1,0 +1,1 @@
+export { default as MessageDetailScreen } from './detail-screen';

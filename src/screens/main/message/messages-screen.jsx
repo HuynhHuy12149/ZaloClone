@@ -1,63 +1,73 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, StatusBar, ScrollView
+  StyleSheet, StatusBar, ScrollView, ActivityIndicator
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
 import { useTheme } from '../../../utils/ThemeContext';
+import { getAllProfiles } from '../../../services/supabaseService/authService';
+import { useAuthStore } from '../../../store/authStore';
 
-const CHATS = [
-  { id: '1', name: 'Lop_NC312_T260', message: 'Ngoc Tran tham gia bằng link nhóm', time: '6 phút', count: 0, isGroup: true, unread: true, pinned: true },
-  { id: '2', name: 'My Documents', message: 'Bạn: [Hình ảnh]', time: '7 phút', count: 0 },
-  { id: '3', name: 'Ykhoath', message: '[Sticker] 😂', time: '53 phút', count: 3 },
-  { id: '4', name: 'Nguyễn Hào', message: 'Bạn: haha', time: '1 giờ', count: 0 },
-  { id: '5', name: 'Tổng Kho Laptop Nhật', message: 'Nguyễn Cường: Dell latitude...', time: '1 giờ', count: 5, isGroup: true },
-  { id: '6', name: 'Nhóm Tấu Hài 🎭', message: 'Hùng Gà: @Giang(TH) 2 cái luôn', time: '2 giờ', count: 0, isGroup: true },
-  { id: '7', name: 'Minh Tú', message: 'Gọi nhỡ', time: '3 giờ', count: 0, missed: true },
-  { id: '8', name: 'Hoàng Long', message: 'ok em nhé 👍', time: 'Hôm qua', count: 0 },
-];
-
-export default function MessagesScreen() {
+export default function MessagesScreen({ navigation }) {
   const { colors } = useTheme();
   const s = styles(colors);
+  const currentUser = useAuthStore(state => state.user);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await getAllProfiles();
+        if (data) {
+          const filteredUsers = data.filter(u => u.id !== currentUser?.id);
+          setUsers(filteredUsers);
+        }
+      } catch (error) {
+        console.error('Error fetching users', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, [currentUser]);
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={s.chatRow} activeOpacity={0.65}>
+    <TouchableOpacity 
+      style={s.chatRow} 
+      activeOpacity={0.65}
+      onPress={() => navigation.navigate('MessageDetail', {
+        conversationId: item.id, // using user id as conversation id for direct messages
+        chatName: item.full_name || item.username,
+        avatar: item.avatar_url || `https://ui-avatars.com/api/?name=${item.full_name || item.username}&background=random`
+      })}
+    >
       {/* Avatar */}
       <View style={s.avatarContainer}>
         <Image
-          source={{ uri: `https://i.pravatar.cc/150?u=${item.id}` }}
+          source={{ uri: item.avatar_url || `https://ui-avatars.com/api/?name=${item.full_name || item.username}&background=random` }}
           style={s.avatar}
         />
         {/* Online dot */}
-        {item.id === '4' && <View style={s.onlineDot} />}
+        <View style={s.onlineDot} />
       </View>
 
       {/* Content */}
       <View style={s.chatContent}>
         <View style={s.chatTop}>
           <View style={s.nameRow}>
-            {item.pinned && (
-              <Ionicons name="pin" size={12} color={colors.icon} style={{ marginRight: 6, transform: [{ rotate: '45deg' }] }} />
-            )}
-            <Text style={s.chatName} numberOfLines={1}>{item.name}</Text>
+            <Text style={s.chatName} numberOfLines={1}>{item.full_name || item.username}</Text>
           </View>
-          <Text style={[s.chatTime, item.unread && { color: colors.accent, fontWeight: '600' }]}>{item.time}</Text>
+          <Text style={s.chatTime}>-</Text>
         </View>
         <View style={s.chatBottom}>
           <Text
-            style={[s.chatMsg, item.missed && { color: colors.badge }, item.unread && { color: colors.text, fontWeight: '500' }]}
+            style={s.chatMsg}
             numberOfLines={1}
           >
-            {item.missed ? '📞 Gọi nhỡ' : item.message}
+            Chưa có tin nhắn...
           </Text>
-          {item.count > 0 && (
-            <View style={s.badge}>
-              <Text style={s.badgeText}>{item.count > 9 ? '9+' : item.count}</Text>
-            </View>
-          )}
-          {item.unread && item.count === 0 && <View style={s.unreadDot} />}
         </View>
       </View>
     </TouchableOpacity>
@@ -89,13 +99,17 @@ export default function MessagesScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.listContent}>
         <View style={s.listWrapper}>
-          <FlatList
-            data={CHATS}
-            keyExtractor={item => item.id}
-            renderItem={renderItem}
-            scrollEnabled={false}
-            ItemSeparatorComponent={() => <View style={s.separator} />}
-          />
+          {loading ? (
+             <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 20 }} />
+          ) : (
+            <FlatList
+              data={users}
+              keyExtractor={item => item.id}
+              renderItem={renderItem}
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => <View style={s.separator} />}
+            />
+          )}
         </View>
       </ScrollView>
     </View>

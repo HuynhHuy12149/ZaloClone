@@ -44,3 +44,9 @@ export const updateProfileAvatar = async (userId, avatarUrl) => {
     supabase.from(ServerEndpoint.PROFILES).update({ avatar_url: avatarUrl }).eq('id', userId)
   );
 };
+
+export const getAllProfiles = async () => {
+  return await supabaseProxy(
+    supabase.from(ServerEndpoint.PROFILES).select('*')
+  );
+};
