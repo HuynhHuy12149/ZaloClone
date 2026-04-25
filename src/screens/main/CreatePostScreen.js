@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Alert,
   ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -16,29 +16,6 @@ export default function CreatePostScreen({ navigation }) {
   const { colors } = useTheme();
   const s = styles(colors);
 
-  const [kbHeight, setKbHeight] = useState(0);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    
-    const sub1 = Keyboard.addListener(showEvent, (e) => {
-      if (Platform.OS === 'ios') {
-        setKbHeight(e.endCoordinates.height);
-      }
-    });
-    const sub2 = Keyboard.addListener(hideEvent, () => {
-      if (Platform.OS === 'ios') {
-        setKbHeight(0);
-      }
-    });
-    
-    return () => {
-      sub1.remove();
-      sub2.remove();
-    };
-  }, []);
-
   const handlePost = async () => {
     if (!content.trim()) {
       Alert.alert('Thông báo', 'Vui lòng nhập nội dung bài viết');
@@ -50,7 +27,6 @@ export default function CreatePostScreen({ navigation }) {
     if (response.success) {
       setContent('');
       Keyboard.dismiss();
-      // Modal tự dismiss, quay về màn hình trước (Nhật ký)
       navigation.goBack();
     } else {
       Alert.alert('Lỗi', response.message || 'Đăng bài thất bại');
@@ -75,7 +51,10 @@ export default function CreatePostScreen({ navigation }) {
   ];
 
   return (
-    <View style={[s.root, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView 
+      style={[s.root, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
@@ -110,43 +89,44 @@ export default function CreatePostScreen({ navigation }) {
       </View>
 
       {/* ── Body ── */}
-      <View style={{ flex: 1, paddingBottom: kbHeight }}>
-        <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={s.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Author row */}
-            <View style={s.authorRow}>
-              <Image source={{ uri: 'https://i.pravatar.cc/100?u=me' }} style={s.authorAvatar} />
-              <View>
-                <Text style={s.authorName}>Huynh Huy</Text>
-                <TouchableOpacity style={s.privacyBtn}>
-                  <Ionicons name="people-outline" size={12} color={colors.icon} />
-                  <Text style={s.privacyText}>Bạn bè</Text>
-                  <Ionicons name="chevron-down" size={11} color={colors.icon} />
-                </TouchableOpacity>
-              </View>
+      <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={s.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Author row */}
+          <View style={s.authorRow}>
+            <Image source={{ uri: 'https://i.pravatar.cc/100?u=me' }} style={s.authorAvatar} />
+            <View>
+              <Text style={s.authorName}>Huynh Huy</Text>
+              <TouchableOpacity style={s.privacyBtn}>
+                <Ionicons name="people-outline" size={12} color={colors.icon} />
+                <Text style={s.privacyText}>Bạn bè</Text>
+                <Ionicons name="chevron-down" size={11} color={colors.icon} />
+              </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Text input */}
-            <TextInput
-              style={[s.input, { flex: 1 }]}
-              placeholder="Bạn đang nghĩ gì?"
-              placeholderTextColor={colors.textPlaceholder}
-              multiline
-              autoFocus
-              value={content}
-              onChangeText={setContent}
-              textAlignVertical="top"
-            />
+          {/* Text input */}
+          <TextInput
+            style={[s.input, { flex: 1 }]}
+            placeholder="Bạn đang nghĩ gì?"
+            placeholderTextColor={colors.textPlaceholder}
+            multiline
+            autoFocus
+            value={content}
+            onChangeText={setContent}
+            textAlignVertical="top"
+          />
 
-          </ScrollView>
-        </Pressable>
+        </ScrollView>
+      </Pressable>
 
-        {/* Media option chips (Fixed at bottom) */}
+      {/* Fixed bottom area */}
+      <View style={s.bottomArea}>
+        {/* Media option chips */}
         <View style={s.mediaScrollWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.mediaRow}>
             {MEDIA_OPTS.map((opt) => (
@@ -161,7 +141,7 @@ export default function CreatePostScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* ── Bottom toolbar ── */}
+        {/* Bottom toolbar */}
         <View style={[s.toolbar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
           {TOOLBAR_BTNS.map((btn, i) => (
             <TouchableOpacity key={i} style={s.toolbarBtn} hitSlop={6}>
@@ -183,7 +163,7 @@ export default function CreatePostScreen({ navigation }) {
           </View>
         </View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -197,9 +177,8 @@ const styles = (c) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: c.border,
     backgroundColor: c.bgCard,
+    zIndex: 10,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   closeBtn: { padding: 4 },
@@ -220,7 +199,7 @@ const styles = (c) => StyleSheet.create({
   iconBtn: { padding: 5 },
   postBtn: {
     paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: 24,
     backgroundColor: c.bgInput,
     minWidth: 60, alignItems: 'center',
   },
@@ -234,7 +213,7 @@ const styles = (c) => StyleSheet.create({
   // Author
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   authorAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: c.bgInput },
-  authorName: { fontSize: 15, fontWeight: '700', color: c.text },
+  authorName: { fontSize: 16, fontWeight: '700', color: c.text },
   privacyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     marginTop: 5, backgroundColor: c.accentLight,
@@ -245,46 +224,57 @@ const styles = (c) => StyleSheet.create({
 
   // Input
   input: {
-    fontSize: 17, color: c.text, lineHeight: 26,
+    fontSize: 18, color: c.text, lineHeight: 26,
     minHeight: 120, textAlignVertical: 'top',
   },
 
+  // Fixed bottom area
+  bottomArea: {
+    backgroundColor: c.bgCard,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 4,
+  },
   // Media chips
   mediaScrollWrap: {
-    backgroundColor: c.bgCard,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   mediaRow: {
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   mediaChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 0.5, borderColor: c.border,
-    backgroundColor: c.bg,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 24,
+    backgroundColor: c.bgInput,
     marginRight: 10,
   },
-  mediaChipText: { fontSize: 13, fontWeight: '500' },
+  mediaChipText: { fontSize: 14, fontWeight: '600' },
 
   // Bottom toolbar
   toolbar: {
     flexDirection: 'row', justifyContent: 'space-around',
-    paddingTop: 10,
-    borderTopWidth: 0.5, borderTopColor: c.border,
-    backgroundColor: c.bgCard,
+    paddingTop: 8,
   },
-  toolbarBtn: { padding: 8 },
+  toolbarBtn: { padding: 10 },
 
   // Overlay
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center', justifyContent: 'center',
+    zIndex: 999,
   },
   overlayCard: {
     backgroundColor: c.bgCard,
-    borderRadius: 16, padding: 24,
+    borderRadius: 24, padding: 24,
     alignItems: 'center', gap: 12,
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, elevation: 10,
   },
-  overlayText: { fontSize: 14, fontWeight: '500' },
+  overlayText: { fontSize: 15, fontWeight: '600' },
 });

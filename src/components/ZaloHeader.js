@@ -22,13 +22,13 @@ export default function ZaloHeader({
   const s = styles(colors);
 
   return (
-    <View style={[s.container, { paddingTop: insets.top + 6 }]}>
+    <View style={[s.container, { paddingTop: insets.top + 8 }]}>
       <View style={s.inner}>
         {title ? (
           <Text style={s.title}>{title}</Text>
         ) : (
-          <TouchableOpacity style={s.searchBar} onPress={onSearchPress} activeOpacity={0.7}>
-            <Ionicons name="search" size={18} color={colors.searchText} />
+          <TouchableOpacity style={s.searchBar} onPress={onSearchPress} activeOpacity={0.8}>
+            <Ionicons name="search" size={20} color={colors.searchText} />
             <Text style={s.searchText}>{placeholder}</Text>
           </TouchableOpacity>
         )}
@@ -48,19 +48,24 @@ export default function ZaloHeader({
 const styles = (c) => StyleSheet.create({
   container: {
     backgroundColor: c.bgCard,
-    paddingBottom: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: c.border,
+    paddingBottom: 12,
+    borderBottomWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+    zIndex: 10,
   },
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    height: 52,
+    height: 56,
   },
   title: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: c.text,
   },
@@ -69,22 +74,25 @@ const styles = (c) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: c.searchBg,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    height: 44,
+    gap: 10,
   },
   searchText: {
-    fontSize: 15,
+    fontSize: 16,
     color: c.searchText,
+    fontWeight: '500',
   },
   rightRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 10,
+    marginLeft: 12,
   },
   iconBtn: {
-    padding: 5,
-    marginLeft: 4,
+    padding: 6,
+    marginLeft: 6,
+    backgroundColor: c.bgInput,
+    borderRadius: 20,
   },
 });

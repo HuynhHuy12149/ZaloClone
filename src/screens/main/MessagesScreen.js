@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, StatusBar,
+  StyleSheet, StatusBar, ScrollView
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ZaloHeader from '../../components/ZaloHeader';
@@ -39,15 +39,15 @@ export default function MessagesScreen() {
         <View style={s.chatTop}>
           <View style={s.nameRow}>
             {item.pinned && (
-              <Ionicons name="pin" size={10} color={colors.icon} style={{ marginRight: 4, transform: [{ rotate: '45deg' }] }} />
+              <Ionicons name="pin" size={12} color={colors.icon} style={{ marginRight: 6, transform: [{ rotate: '45deg' }] }} />
             )}
             <Text style={s.chatName} numberOfLines={1}>{item.name}</Text>
           </View>
-          <Text style={[s.chatTime, item.unread && { color: colors.accent }]}>{item.time}</Text>
+          <Text style={[s.chatTime, item.unread && { color: colors.accent, fontWeight: '600' }]}>{item.time}</Text>
         </View>
         <View style={s.chatBottom}>
           <Text
-            style={[s.chatMsg, item.missed && { color: colors.badge }]}
+            style={[s.chatMsg, item.missed && { color: colors.badge }, item.unread && { color: colors.text, fontWeight: '500' }]}
             numberOfLines={1}
           >
             {item.missed ? '📞 Gọi nhỡ' : item.message}
@@ -71,81 +71,100 @@ export default function MessagesScreen() {
           { component: <Ionicons name="add-circle-outline" size={26} color={colors.iconAction} /> },
         ]}
       />
+      
       {/* Filter chips */}
       <View style={s.filterRow}>
-        {['Tất cả', 'Chưa đọc', 'Nhóm', 'OA'].map((label, i) => (
-          <TouchableOpacity
-            key={label}
-            style={[s.chip, i === 0 && { backgroundColor: colors.accent }]}
-          >
-            <Text style={[s.chipText, i === 0 && { color: '#fff' }]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterScroll}>
+          {['Tất cả', 'Chưa đọc', 'Nhóm', 'OA'].map((label, i) => (
+            <TouchableOpacity
+              key={label}
+              style={[s.chip, i === 0 && { backgroundColor: colors.accent }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.chipText, i === 0 && { color: '#fff', fontWeight: '600' }]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <FlatList
-        data={CHATS}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ height: 0.5, backgroundColor: colors.border, marginLeft: 82 }} />}
-      />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.listContent}>
+        <View style={s.listWrapper}>
+          <FlatList
+            data={CHATS}
+            keyExtractor={item => item.id}
+            renderItem={renderItem}
+            scrollEnabled={false}
+            ItemSeparatorComponent={() => <View style={s.separator} />}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = (c) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.bgCard },
+  container: { flex: 1, backgroundColor: c.bg },
   filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5,
-    borderBottomColor: c.border,
+    paddingVertical: 12,
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    gap: 10,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: c.bgInput,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 24,
+    backgroundColor: c.bgCard,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
   },
-  chipText: { fontSize: 13, fontWeight: '500', color: c.textSub },
+  chipText: { fontSize: 14, fontWeight: '500', color: c.textSub },
+  
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  listWrapper: {
+    backgroundColor: c.bgCard,
+    borderRadius: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    overflow: 'hidden',
+    paddingVertical: 4,
+  },
   chatRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    backgroundColor: c.bgCard,
+    paddingVertical: 14,
     alignItems: 'center',
+    backgroundColor: c.bgCard,
   },
-  avatarContainer: { position: 'relative', marginRight: 12 },
-  avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: c.bgInput },
+  avatarContainer: { position: 'relative', marginRight: 14 },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: c.bgInput },
   onlineDot: {
-    position: 'absolute', bottom: 1, right: 1,
-    width: 13, height: 13, borderRadius: 7,
+    position: 'absolute', bottom: 2, right: 2,
+    width: 14, height: 14, borderRadius: 7,
     backgroundColor: c.online,
-    borderWidth: 2, borderColor: c.bg,
+    borderWidth: 2.5, borderColor: c.bgCard,
   },
   chatContent: {
     flex: 1,
-    paddingBottom: 11,
   },
-  chatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
-  chatName: { fontSize: 15, fontWeight: '600', color: c.text, flex: 1 },
-  chatTime: { fontSize: 11, color: c.textMuted },
-  chatBottom: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
-  chatMsg: { fontSize: 13, color: c.textSub, flex: 1, marginRight: 6 },
+  chatName: { fontSize: 16, fontWeight: '700', color: c.text, flex: 1 },
+  chatTime: { fontSize: 12, color: c.textMuted },
+  chatBottom: { flexDirection: 'row', alignItems: 'center' },
+  chatMsg: { fontSize: 14, color: c.textSub, flex: 1, marginRight: 8 },
   badge: {
     backgroundColor: c.badge,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  unreadDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: c.badge },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.badge },
+  separator: { height: 1, backgroundColor: c.border + '50', marginLeft: 86 },
 });

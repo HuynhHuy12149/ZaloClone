@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity, ScrollView,
-  StyleSheet,
+  StyleSheet, LayoutAnimation, Platform, UIManager
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import ZaloHeader from '../../components/ZaloHeader';
 import AnimatedTabBar from '../../components/AnimatedTabBar';
 import { useTheme } from '../../utils/ThemeContext';
+
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
 
 const TABS = ['Bạn bè', 'Nhóm', 'OA'];
 
@@ -26,6 +32,11 @@ export default function ContactsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const s = styles(colors);
 
+  const handleTabChange = (index) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setActiveTab(index);
+  };
+
   return (
     <View style={s.container}>
       <ZaloHeader
@@ -38,98 +49,130 @@ export default function ContactsScreen() {
       <AnimatedTabBar
         tabs={TABS}
         active={activeTab}
-        onChange={setActiveTab}
+        onChange={handleTabChange}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Quick actions */}
-        <TouchableOpacity style={s.actionRow} activeOpacity={0.7}>
-          <View style={[s.actionIcon, { backgroundColor: '#1d4ed8' }]}>
-            <FontAwesome5 name="user-friends" size={18} color="#fff" />
-          </View>
-          <View style={s.actionContent}>
-            <Text style={s.actionTitle}>Lời mời kết bạn</Text>
-          </View>
-          <View style={s.reqBadge}><Text style={s.reqBadgeText}>3</Text></View>
-          <Ionicons name="chevron-forward" size={18} color={colors.iconSub} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={s.actionRow} activeOpacity={0.7}>
-          <View style={[s.actionIcon, { backgroundColor: '#0891b2' }]}>
-            <FontAwesome5 name="birthday-cake" size={16} color="#fff" />
-          </View>
-          <View style={s.actionContent}>
-            <Text style={s.actionTitle}>Sinh nhật</Text>
-            <Text style={s.actionSub} numberOfLines={1}>Hôm nay là sinh nhật Huỳnh Khanh Phol 🎂</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.iconSub} />
-        </TouchableOpacity>
-
-        {/* Filter chips */}
-        <View style={s.filterRow}>
-          {['Tất cả 255', 'Mới truy cập', 'Yêu thích'].map((label, i) => (
-            <TouchableOpacity
-              key={label}
-              style={[s.chip, i === 0 && { backgroundColor: colors.accent }]}
-            >
-              <Text style={[s.chipText, i === 0 && { color: '#fff' }]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Section A */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionLetter}>A</Text>
-        </View>
-        {FRIENDS.map((friend) => (
-          <TouchableOpacity key={friend.id} style={s.friendRow} activeOpacity={0.7}>
-            <View style={s.avatarWrap}>
-              <Image
-                source={{ uri: `https://i.pravatar.cc/100?u=${friend.id}` }}
-                style={s.avatar}
-              />
-              {friend.online && <View style={s.onlineDot} />}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
+        {/* Quick actions group */}
+        <View style={s.actionGroup}>
+          <TouchableOpacity style={s.actionRow} activeOpacity={0.7}>
+            <View style={[s.actionIcon, { backgroundColor: '#1d4ed8' }]}>
+              <FontAwesome5 name="user-friends" size={18} color="#fff" />
             </View>
-            <View style={s.friendInfo}>
-              <Text style={s.friendName}>{friend.name}</Text>
-              <Text style={[s.friendStatus, friend.online && { color: colors.online }]}>
-                {friend.status}
-              </Text>
+            <View style={s.actionContent}>
+              <Text style={s.actionTitle}>Lời mời kết bạn</Text>
             </View>
-            <View style={s.friendActions}>
-              <TouchableOpacity style={s.actionBtn}>
-                <Ionicons name="call-outline" size={20} color={colors.icon} />
-              </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn}>
-                <Ionicons name="videocam-outline" size={22} color={colors.icon} />
-              </TouchableOpacity>
-            </View>
+            <View style={s.reqBadge}><Text style={s.reqBadgeText}>3</Text></View>
+            <Ionicons name="chevron-forward" size={18} color={colors.iconSub} />
           </TouchableOpacity>
-        ))}
-        <View style={{ height: 80 }} />
+          <View style={s.actionDivider} />
+          <TouchableOpacity style={s.actionRow} activeOpacity={0.7}>
+            <View style={[s.actionIcon, { backgroundColor: '#0891b2' }]}>
+              <FontAwesome5 name="birthday-cake" size={16} color="#fff" />
+            </View>
+            <View style={s.actionContent}>
+              <Text style={s.actionTitle}>Sinh nhật</Text>
+              <Text style={s.actionSub} numberOfLines={1}>Hôm nay là sinh nhật Huỳnh Khanh Phol 🎂</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.iconSub} />
+          </TouchableOpacity>
+        </View>
+
+        {activeTab === 0 ? (
+          <>
+            {/* Filter chips */}
+            <View style={s.filterRow}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterScroll}>
+                {['Tất cả 255', 'Mới truy cập', 'Yêu thích'].map((label, i) => (
+                  <TouchableOpacity
+                    key={label}
+                    style={[s.chip, i === 0 && { backgroundColor: colors.accent }]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.chipText, i === 0 && { color: '#fff', fontWeight: '600' }]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Section A */}
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionLetter}>A</Text>
+            </View>
+            
+            <View style={s.friendGroup}>
+              {FRIENDS.map((friend, index) => (
+                <View key={friend.id}>
+                  <TouchableOpacity style={s.friendRow} activeOpacity={0.7}>
+                    <View style={s.avatarWrap}>
+                      <Image
+                        source={{ uri: `https://i.pravatar.cc/100?u=${friend.id}` }}
+                        style={s.avatar}
+                      />
+                      {friend.online && <View style={s.onlineDot} />}
+                    </View>
+                    <View style={s.friendInfo}>
+                      <Text style={s.friendName}>{friend.name}</Text>
+                      <Text style={[s.friendStatus, friend.online && { color: colors.online }]}>
+                        {friend.status}
+                      </Text>
+                    </View>
+                    <View style={s.friendActions}>
+                      <TouchableOpacity style={s.actionBtn}>
+                        <Ionicons name="call-outline" size={20} color={colors.icon} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={s.actionBtn}>
+                        <Ionicons name="videocam-outline" size={22} color={colors.icon} />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                  {index < FRIENDS.length - 1 && <View style={s.friendDivider} />}
+                </View>
+              ))}
+            </View>
+          </>
+        ) : (
+          <View style={s.emptyBox}>
+            <MaterialIcons name={activeTab === 1 ? 'groups' : 'storefront'} size={64} color={colors.iconSub} />
+            <Text style={s.emptyText}>{activeTab === 1 ? 'Nhóm' : 'Official Account'}</Text>
+            <Text style={s.emptySub}>Chưa có dữ liệu</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Alphabet sidebar */}
-      <View style={s.sidebar}>
-        {ALPHABET.map((l) => (
-          <Text key={l} style={s.sidebarLetter}>{l}</Text>
-        ))}
-      </View>
+      {activeTab === 0 && (
+        <View style={s.sidebar}>
+          {ALPHABET.map((l) => (
+            <Text key={l} style={s.sidebarLetter}>{l}</Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
+  scrollContent: { paddingBottom: 40 },
+  
+  actionGroup: {
+    backgroundColor: c.bgCard,
+    borderRadius: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    paddingVertical: 4,
+  },
   actionRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-    backgroundColor: c.bgCard, borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
-  actionIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  actionDivider: { height: 1, backgroundColor: c.border + '60', marginLeft: 74 },
+  actionIcon: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   actionContent: { flex: 1, marginLeft: 14 },
-  actionTitle: { fontSize: 15, fontWeight: '500', color: c.text },
-  actionSub: { fontSize: 12, color: c.textSub, marginTop: 2 },
+  actionTitle: { fontSize: 16, fontWeight: '600', color: c.text },
+  actionSub: { fontSize: 13, color: c.textSub, marginTop: 2 },
   reqBadge: {
     backgroundColor: c.badge,
     borderRadius: 12, minWidth: 22, height: 22,
@@ -137,46 +180,65 @@ const styles = (c) => StyleSheet.create({
     paddingHorizontal: 6, marginRight: 8,
   },
   reqBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  
   filterRow: {
-    flexDirection: 'row', gap: 8,
-    paddingHorizontal: 14, paddingVertical: 10,
-    backgroundColor: c.bg,
+    paddingVertical: 16,
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    gap: 10,
   },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: c.bgCard,
-    borderWidth: 0.5, borderColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 24, backgroundColor: c.bgCard,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
   },
-  chipText: { fontSize: 13, fontWeight: '500', color: c.textSub },
+  chipText: { fontSize: 14, fontWeight: '500', color: c.textSub },
+  
   sectionHeader: {
-    paddingHorizontal: 16, paddingVertical: 6,
-    backgroundColor: c.bgSection,
+    paddingHorizontal: 24, paddingBottom: 8,
   },
-  sectionLetter: { fontSize: 13, fontWeight: '700', color: c.textMuted },
+  sectionLetter: { fontSize: 14, fontWeight: '800', color: c.textMuted },
+  
+  friendGroup: {
+    backgroundColor: c.bgCard,
+    borderRadius: 24,
+    marginHorizontal: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    paddingVertical: 4,
+  },
   friendRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 10,
-    backgroundColor: c.bgCard, borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
+  friendDivider: { height: 1, backgroundColor: c.border + '60', marginLeft: 80 },
   avatarWrap: { position: 'relative' },
   avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: c.bgInput },
   onlineDot: {
     position: 'absolute', bottom: 1, right: 1,
-    width: 12, height: 12, borderRadius: 6,
-    backgroundColor: c.online, borderWidth: 2, borderColor: c.bgCard,
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: c.online, borderWidth: 2.5, borderColor: c.bgCard,
   },
   friendInfo: { flex: 1, marginLeft: 14 },
-  friendName: { fontSize: 15, fontWeight: '500', color: c.text },
-  friendStatus: { fontSize: 12, color: c.textSub, marginTop: 2 },
-  friendActions: { flexDirection: 'row', gap: 4 },
+  friendName: { fontSize: 16, fontWeight: '600', color: c.text },
+  friendStatus: { fontSize: 13, color: c.textSub, marginTop: 2, fontWeight: '500' },
+  friendActions: { flexDirection: 'row', gap: 6 },
   actionBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: c.accentLight,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: c.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
+  
   sidebar: {
-    position: 'absolute', right: 4, top: 140, bottom: 20,
+    position: 'absolute', right: 4, top: '25%',
     justifyContent: 'center', alignItems: 'center',
+    backgroundColor: c.bgInput + '40',
+    borderRadius: 16,
+    paddingVertical: 8, paddingHorizontal: 4,
   },
-  sidebarLetter: { fontSize: 10, color: c.iconSub, paddingVertical: 1, fontWeight: '600' },
+  sidebarLetter: { fontSize: 10, color: c.iconSub, paddingVertical: 1.5, fontWeight: '700' },
+
+  emptyBox: { paddingTop: 60, alignItems: 'center', gap: 8 },
+  emptyText: { fontSize: 16, fontWeight: '700', color: c.textSub },
+  emptySub: { fontSize: 14, color: c.textMuted },
 });

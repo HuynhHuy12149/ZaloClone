@@ -79,9 +79,15 @@ export default function AnimatedTabBar({ tabs, active, onChange, style }) {
 const ss = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderBottomWidth: 0.5,
+    borderBottomWidth: 0,
     position: 'relative',
-    height: 48,
+    height: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 1,
+    zIndex: 5,
   },
   tab: {
     flex: 1,
@@ -89,8 +95,8 @@ const ss = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontSize: 15,
-    letterSpacing: 0.1,
+    fontSize: 16,
+    letterSpacing: 0.2,
   },
   indicatorWrap: {
     position: 'absolute',
@@ -100,7 +106,7 @@ const ss = StyleSheet.create({
     alignItems: 'center',
   },
   indicatorLine: {
-    width: 44,
+    width: 50,
     height: 3,
     borderRadius: 3,
   },

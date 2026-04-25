@@ -25,26 +25,38 @@ export default function DiscoverScreen() {
   const { colors } = useTheme();
   const s = styles(colors);
 
-  const renderItem = (item) => (
-    <TouchableOpacity key={item.id} style={s.item} activeOpacity={0.7}>
-      <View style={[s.iconBox, { backgroundColor: item.iconColor + '22' }]}>
-        {item.iconLib === 'ion'
-          ? <Ionicons name={item.icon} size={24} color={item.iconColor} />
-          : <MaterialCommunityIcons name={item.icon} size={24} color={item.iconColor} />
-        }
+  const renderCardGroup = (title, data) => (
+    <View style={s.sectionWrap}>
+      <View style={s.sectionLabel}>
+        <Text style={s.sectionTitle}>{title}</Text>
       </View>
-      <View style={s.itemContent}>
-        <Text style={s.itemTitle}>{item.title}</Text>
-        {item.desc && <Text style={s.itemDesc} numberOfLines={1}>{item.desc}</Text>}
+      <View style={s.card}>
+        {data.map((item, index) => (
+          <View key={item.id}>
+            <TouchableOpacity style={s.item} activeOpacity={0.7}>
+              <View style={[s.iconBox, { backgroundColor: item.iconColor + '22' }]}>
+                {item.iconLib === 'ion'
+                  ? <Ionicons name={item.icon} size={24} color={item.iconColor} />
+                  : <MaterialCommunityIcons name={item.icon} size={24} color={item.iconColor} />
+                }
+              </View>
+              <View style={s.itemContent}>
+                <Text style={s.itemTitle}>{item.title}</Text>
+                {item.desc && <Text style={s.itemDesc} numberOfLines={1}>{item.desc}</Text>}
+              </View>
+              {item.hasPreview && (
+                <Image
+                  source={{ uri: 'https://i.pravatar.cc/50?u=zv' }}
+                  style={s.preview}
+                />
+              )}
+              <Entypo name="chevron-small-right" size={22} color={colors.iconSub} />
+            </TouchableOpacity>
+            {index < data.length - 1 && <View style={s.itemDivider} />}
+          </View>
+        ))}
       </View>
-      {item.hasPreview && (
-        <Image
-          source={{ uri: 'https://i.pravatar.cc/50?u=zv' }}
-          style={s.preview}
-        />
-      )}
-      <Entypo name="chevron-small-right" size={22} color={colors.iconSub} />
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -55,37 +67,18 @@ export default function DiscoverScreen() {
           { component: <MaterialCommunityIcons name="qrcode-scan" size={22} color={colors.iconAction} /> },
         ]}
       />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
         {/* Banner */}
         <View style={s.banner}>
           <View style={[s.bannerCard, { backgroundColor: colors.accentLight }]}>
             <Ionicons name="sparkles" size={20} color={colors.accent} />
-            <Text style={[s.bannerText, { color: colors.accent }]}>  Khám phá dịch vụ mới nhất cho bạn</Text>
+            <Text style={[s.bannerText, { color: colors.accent }]}>Khám phá dịch vụ mới nhất cho bạn</Text>
           </View>
         </View>
 
-        <View style={s.sectionLabel}>
-          <Text style={s.sectionTitle}>Giải trí</Text>
-        </View>
-        <View style={s.card}>
-          {ITEMS.map(renderItem)}
-        </View>
-
-        <View style={[s.sectionLabel, { marginTop: 8 }]}>
-          <Text style={s.sectionTitle}>Tài chính & Dịch vụ</Text>
-        </View>
-        <View style={s.card}>
-          {ITEMS2.map(renderItem)}
-        </View>
-
-        <View style={[s.sectionLabel, { marginTop: 8 }]}>
-          <Text style={s.sectionTitle}>Công cụ thông minh</Text>
-        </View>
-        <View style={s.card}>
-          {ITEMS3.map(renderItem)}
-        </View>
-
-        <View style={{ height: 32 }} />
+        {renderCardGroup("Giải trí", ITEMS)}
+        {renderCardGroup("Tài chính & Dịch vụ", ITEMS2)}
+        {renderCardGroup("Công cụ thông minh", ITEMS3)}
       </ScrollView>
     </View>
   );
@@ -93,27 +86,40 @@ export default function DiscoverScreen() {
 
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
-  banner: { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: c.bg },
+  scrollContent: { paddingBottom: 40 },
+  
+  banner: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   bannerCard: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderRadius: 24,
   },
-  bannerText: { fontSize: 13, fontWeight: '500' },
-  sectionLabel: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: c.bg },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  card: { backgroundColor: c.bgCard, borderRadius: 0 },
+  bannerText: { fontSize: 14, fontWeight: '600', marginLeft: 8 },
+  
+  sectionWrap: {
+    marginTop: 8,
+  },
+  sectionLabel: { paddingHorizontal: 24, paddingVertical: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '800', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  
+  card: { 
+    backgroundColor: c.bgCard, 
+    borderRadius: 24,
+    marginHorizontal: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    paddingVertical: 4,
+  },
   item: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
+  itemDivider: { height: 1, backgroundColor: c.border + '50', marginLeft: 74 },
   iconBox: {
-    width: 44, height: 44, borderRadius: 12,
+    width: 44, height: 44, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
   itemContent: { flex: 1, marginLeft: 14 },
-  itemTitle: { fontSize: 15, fontWeight: '500', color: c.text },
-  itemDesc: { fontSize: 12, color: c.textSub, marginTop: 2 },
-  preview: { width: 48, height: 36, borderRadius: 6, marginRight: 8 },
+  itemTitle: { fontSize: 16, fontWeight: '600', color: c.text },
+  itemDesc: { fontSize: 13, color: c.textSub, marginTop: 2 },
+  preview: { width: 56, height: 40, borderRadius: 10, marginRight: 8 },
 });
