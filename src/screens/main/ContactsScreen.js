@@ -154,7 +154,7 @@ export default function ContactsScreen() {
 
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingBottom: 110 },
   
   actionGroup: {
     backgroundColor: c.bgCard,

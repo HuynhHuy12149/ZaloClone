@@ -3,35 +3,30 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Animated, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../utils/ThemeContext';
 
 /* ── Icon map ── */
 const TAB_CONFIG = {
   Messages: {
-    label: 'Tin nhắn',
-    active: (c) => <MaterialCommunityIcons name="message-text" size={26} color={c} />,
-    inactive: (c) => <MaterialCommunityIcons name="message-text-outline" size={26} color={c} />,
+    active: (c) => <Ionicons name="chatbubble-ellipses" size={24} color={c} />,
+    inactive: (c) => <Ionicons name="chatbubble-ellipses-outline" size={26} color={c} />,
   },
   Contacts: {
-    label: 'Danh bạ',
-    active: (c) => <MaterialCommunityIcons name="contacts" size={26} color={c} />,
-    inactive: (c) => <MaterialCommunityIcons name="contacts-outline" size={26} color={c} />,
+    active: (c) => <Ionicons name="people" size={26} color={c} />,
+    inactive: (c) => <Ionicons name="people-outline" size={28} color={c} />,
   },
   Discover: {
-    label: 'Khám phá',
-    active: (c) => <Ionicons name="compass" size={27} color={c} />,
-    inactive: (c) => <Ionicons name="compass-outline" size={27} color={c} />,
+    active: (c) => <Ionicons name="compass" size={28} color={c} />,
+    inactive: (c) => <Ionicons name="compass-outline" size={28} color={c} />,
   },
   Home: {
-    label: 'Nhật ký',
-    active: (c) => <Ionicons name="time" size={26} color={c} />,
-    inactive: (c) => <Ionicons name="time-outline" size={26} color={c} />,
+    active: (c) => <Ionicons name="layers" size={26} color={c} />,
+    inactive: (c) => <Ionicons name="layers-outline" size={26} color={c} />,
   },
   Profile: {
-    label: 'Cá nhân',
-    active: (c) => <FontAwesome5 name="user-alt" size={22} color={c} />,
-    inactive: (c) => <FontAwesome5 name="user" size={22} color={c} />,
+    active: (c) => <Ionicons name="person" size={24} color={c} />,
+    inactive: (c) => <Ionicons name="person-outline" size={26} color={c} />,
   },
 };
 
@@ -91,30 +86,6 @@ function TabItem({ route, isFocused, colors, onPress, onLongPress }) {
           : cfg.inactive?.(iconColor)
         }
       </Animated.View>
-
-      {/* Label */}
-      <Text
-        style={[
-          ss.label,
-          { color: isFocused ? activeColor : inactiveColor,
-            fontWeight: isFocused ? '700' : '400' },
-        ]}
-        numberOfLines={1}
-      >
-        {cfg.label || route.name}
-      </Text>
-
-      {/* Active dot */}
-      <Animated.View
-        style={[
-          ss.dot,
-          {
-            backgroundColor: activeColor,
-            opacity: dotAnim,
-            transform: [{ scaleX: dotAnim }],
-          },
-        ]}
-      />
     </TouchableOpacity>
   );
 }
@@ -126,17 +97,23 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
   const BAR_HEIGHT = 62;
 
   return (
-    <View
-      style={[
-        ss.container,
-        {
-          backgroundColor: colors.tabBg,
-          borderTopColor: colors.tabBorder,
-          paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 0),
-          height: BAR_HEIGHT + Math.max(insets.bottom, Platform.OS === 'android' ? 6 : 0),
-        },
-      ]}
-    >
+    <View style={{
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingBottom: Math.max(insets.bottom, 16),
+      paddingHorizontal: 20,
+      backgroundColor: 'transparent',
+    }}>
+      <View
+        style={[
+          ss.container,
+          {
+            backgroundColor: colors.tabBg,
+          },
+        ]}
+      >
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
 
@@ -166,26 +143,26 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
           />
         );
       })}
+      </View>
     </View>
   );
 }
 
 const ss = StyleSheet.create({
   container: {
+    height: 64,
     flexDirection: 'row',
-    borderTopWidth: 0.5,
-    elevation: 12,
+    borderRadius: 32,
+    elevation: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 6,
-    paddingBottom: 2,
     position: 'relative',
   },
   iconWrap: {
@@ -193,24 +170,12 @@ const ss = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: 48,
-    height: 32,
+    height: 48,
   },
   activePill: {
     position: 'absolute',
     width: 48,
-    height: 28,
-    borderRadius: 14,
-  },
-  label: {
-    fontSize: 10.5,
-    marginTop: 3,
-    letterSpacing: 0.1,
-  },
-  dot: {
-    position: 'absolute',
-    bottom: -2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    height: 48,
+    borderRadius: 24,
   },
 });

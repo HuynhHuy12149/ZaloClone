@@ -86,7 +86,7 @@ export default function DiscoverScreen() {
 
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingBottom: 110 },
   
   banner: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   bannerCard: {
