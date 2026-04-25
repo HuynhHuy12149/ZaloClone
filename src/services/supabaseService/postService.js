@@ -1,6 +1,10 @@
 import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
+<<<<<<< HEAD
 import { ServerEndpoint } from '../config/ServerEndpoint';
+=======
+import { ServerEndpoint } from '../../constants/ServerEndpoint';
+>>>>>>> b4ac8c244cc4c5eb128ea99dff7edde18a003ecd
 
 // Lấy danh sách bài viết (kèm thông tin tác giả)
 export const getPosts = async () => {
