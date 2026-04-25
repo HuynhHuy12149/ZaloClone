@@ -102,7 +102,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
       bottom: 0,
       left: 0,
       right: 0,
-      paddingBottom: Math.max(insets.bottom, 16),
+      paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 24) : Math.max(insets.bottom, 16),
       paddingHorizontal: 20,
       backgroundColor: 'transparent',
     }}>
@@ -153,7 +153,7 @@ const ss = StyleSheet.create({
     height: 64,
     flexDirection: 'row',
     borderRadius: 32,
-    elevation: 16,
+    elevation: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,

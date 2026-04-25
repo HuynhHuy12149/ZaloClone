@@ -252,7 +252,7 @@ const styles = (c) => StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.03,
     shadowRadius: 16,
-    elevation: 4,
+    elevation: 0,
   },
   // Media chips
   mediaScrollWrap: {

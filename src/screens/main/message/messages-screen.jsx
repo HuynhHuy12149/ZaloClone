@@ -116,18 +116,19 @@ const styles = (c) => StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 24,
     backgroundColor: c.bgCard,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 0,
   },
   chipText: { fontSize: 14, fontWeight: '500', color: c.textSub },
   
   listContent: {
     paddingHorizontal: 16,
+    marginTop:2,
     paddingBottom: 110,
   },
   listWrapper: {
     backgroundColor: c.bgCard,
     borderRadius: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,
     overflow: 'hidden',
     paddingVertical: 4,
   },

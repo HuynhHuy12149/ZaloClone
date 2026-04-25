@@ -258,7 +258,7 @@ const styles = (c) => StyleSheet.create({
     width: 44, height: 44, borderRadius: 22, 
     backgroundColor: c.bgCard, 
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 0
   },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 110 },
@@ -270,6 +270,8 @@ const styles = (c) => StyleSheet.create({
   },
   avatarWrap: { 
     marginBottom: 16,
+    borderRadius: 40,
+    backgroundColor: c.bgInput,
     shadowColor: c.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8
   },
   avatar: { width: 110, height: 110, borderRadius: 40, backgroundColor: c.bgInput },
@@ -297,7 +299,7 @@ const styles = (c) => StyleSheet.create({
   iconBtn: {
     width: 46, height: 46, borderRadius: 23,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 0
   },
 
   bentoContainer: {
@@ -323,7 +325,7 @@ const styles = (c) => StyleSheet.create({
     borderRadius: 24,
     marginBottom: 16,
     paddingVertical: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 0,
   },
   item: {
     flexDirection: 'row', alignItems: 'center',

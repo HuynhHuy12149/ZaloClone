@@ -157,7 +157,7 @@ const styles = (c) => StyleSheet.create({
   inputGroup: {
     backgroundColor: c.bgCard,
     borderRadius: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 0,
     paddingVertical: 4,
     marginBottom: 16,
   },
@@ -167,7 +167,7 @@ const styles = (c) => StyleSheet.create({
     gap: 12,
   },
   divider: { height: 1, backgroundColor: c.border + '60', marginLeft: 52 },
-  input: { flex: 1, fontSize: 16, color: c.text, height: 32 },
+  input: { flex: 1, fontSize: 16, color: c.text, minHeight: 40, padding: 0 },
 
   forgotBtn: { alignSelf: 'flex-end', marginBottom: 32, paddingHorizontal: 4 },
   forgotText: { fontSize: 14, fontWeight: '600', color: c.accent },

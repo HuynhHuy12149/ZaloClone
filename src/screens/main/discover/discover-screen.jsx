@@ -106,7 +106,7 @@ const styles = (c) => StyleSheet.create({
     backgroundColor: c.bgCard, 
     borderRadius: 24,
     marginHorizontal: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,
     paddingVertical: 4,
   },
   item: {

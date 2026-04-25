@@ -161,7 +161,7 @@ const styles = (c) => StyleSheet.create({
     borderRadius: 24,
     marginHorizontal: 16,
     marginTop: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,
     paddingVertical: 4,
   },
   actionRow: {
@@ -191,7 +191,7 @@ const styles = (c) => StyleSheet.create({
   chip: {
     paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 24, backgroundColor: c.bgCard,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 0,
   },
   chipText: { fontSize: 14, fontWeight: '500', color: c.textSub },
 
@@ -204,7 +204,7 @@ const styles = (c) => StyleSheet.create({
     backgroundColor: c.bgCard,
     borderRadius: 24,
     marginHorizontal: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,
     paddingVertical: 4,
   },
   friendRow: {
