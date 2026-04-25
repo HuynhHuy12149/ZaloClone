@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  Switch, StyleSheet,
+  Switch, StyleSheet, ActivityIndicator, Alert
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../utils/ThemeContext';
 
@@ -33,6 +34,69 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const s = styles(colors);
 
+  const [avatarUri, setAvatarUri] = useState('https://i.pravatar.cc/150?u=me');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const pickAndUploadImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadToCloudinary(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.log('Error picking image: ', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh');
+    }
+  };
+
+  const uploadToCloudinary = async (uri) => {
+    setIsUploading(true);
+    try {
+      const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        Alert.alert('Lỗi', 'Thiếu cấu hình Cloudinary trong .env');
+        return;
+      }
+
+      const data = new FormData();
+      data.append('file', {
+        uri,
+        type: 'image/jpeg',
+        name: 'upload.jpg',
+      });
+      data.append('upload_preset', uploadPreset);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const result = await response.json();
+      if (result.secure_url) {
+        setAvatarUri(result.secure_url);
+        Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện');
+      } else {
+        throw new Error(result.error?.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.log('Error uploading image: ', error);
+      Alert.alert('Lỗi', 'Không thể tải ảnh lên');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <View style={s.container}>
       {/* Header */}
@@ -46,13 +110,19 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
         <TouchableOpacity style={s.profileCard} activeOpacity={0.8}>
-          <View style={s.avatarWrap}>
-            <Image source={{ uri: 'https://i.pravatar.cc/150?u=me' }} style={s.avatar} />
+          <TouchableOpacity style={s.avatarWrap} onPress={pickAndUploadImage} disabled={isUploading}>
+            <Image source={{ uri: avatarUri }} style={s.avatar} />
+            {isUploading && (
+              <View style={[StyleSheet.absoluteFill, s.avatarOverlay]}>
+                <ActivityIndicator color="#ffffff" size="small" />
+              </View>
+            )}
             <View style={[s.emojiBadge, { backgroundColor: colors.bgCard }]}>
               <Text style={{ fontSize: 12 }}>😊</Text>
             </View>
-          </View>
+          </TouchableOpacity>
           <View style={s.profileMeta}>
+            <Text>{JSON.stringify(s)}</Text>
             <Text style={s.profileName}>Huynh Huy</Text>
             <Text style={s.profileSub}>Xem trang cá nhân</Text>
           </View>
@@ -163,6 +233,12 @@ const styles = (c) => StyleSheet.create({
   },
   avatarWrap: { position: 'relative' },
   avatar: { width: 68, height: 68, borderRadius: 34, backgroundColor: c.bgInput },
+  avatarOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emojiBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 24, height: 24, borderRadius: 12,
