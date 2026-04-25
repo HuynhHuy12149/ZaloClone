@@ -1,6 +1,6 @@
-import { supabase } from '../libs/supabase';
-import { supabaseProxy } from './Proxy';
-import { ServerEndpoint } from './ServerEndpoint';
+import { supabase } from '../../libs/supabase';
+import { supabaseProxy } from '../config/Proxy';
+import { ServerEndpoint } from '../../constants/ServerEndpoint';
 
 export const login = async (email, password) => {
   return await supabaseProxy(supabase.auth.signInWithPassword({ email, password }));
@@ -20,7 +20,7 @@ export const register = async (email, password, username, fullName) => {
       },
     })
   );
-  
+
   // Trả về kết quả auth (Database trigger sẽ tự tạo dòng trong bảng profiles)
   return authResponse;
 };

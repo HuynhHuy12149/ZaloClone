@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
-import ZaloHeader from '../../components/ZaloHeader';
-import { useTheme } from '../../utils/ThemeContext';
+import ZaloHeader from '../../../components/ZaloHeader';
+import { useTheme } from '../../../utils/ThemeContext';
 
 const ITEMS = [
   { id: '1', icon: 'play-skip-forward', iconLib: 'ion', iconColor: '#facc15', title: 'Zalo Video', desc: '[Xem nhiều] Đây có phải là Cổ Khiết...', hasPreview: true },

@@ -1,0 +1,1 @@
+export { default as CreatePostScreen } from './create-post-screen';

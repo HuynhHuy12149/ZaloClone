@@ -4,9 +4,9 @@ import {
   StyleSheet, LayoutAnimation, Platform, UIManager
 } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import ZaloHeader from '../../components/ZaloHeader';
-import AnimatedTabBar from '../../components/AnimatedTabBar';
-import { useTheme } from '../../utils/ThemeContext';
+import ZaloHeader from '../../../components/ZaloHeader';
+import AnimatedTabBar from '../../../components/AnimatedTabBar';
+import { useTheme } from '../../../utils/ThemeContext';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -99,7 +99,7 @@ export default function ContactsScreen() {
             <View style={s.sectionHeader}>
               <Text style={s.sectionLetter}>A</Text>
             </View>
-            
+
             <View style={s.friendGroup}>
               {FRIENDS.map((friend, index) => (
                 <View key={friend.id}>
@@ -155,7 +155,7 @@ export default function ContactsScreen() {
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
   scrollContent: { paddingBottom: 110 },
-  
+
   actionGroup: {
     backgroundColor: c.bgCard,
     borderRadius: 24,
@@ -180,7 +180,7 @@ const styles = (c) => StyleSheet.create({
     paddingHorizontal: 6, marginRight: 8,
   },
   reqBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  
+
   filterRow: {
     paddingVertical: 16,
   },
@@ -194,12 +194,12 @@ const styles = (c) => StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1,
   },
   chipText: { fontSize: 14, fontWeight: '500', color: c.textSub },
-  
+
   sectionHeader: {
     paddingHorizontal: 24, paddingBottom: 8,
   },
   sectionLetter: { fontSize: 14, fontWeight: '800', color: c.textMuted },
-  
+
   friendGroup: {
     backgroundColor: c.bgCard,
     borderRadius: 24,
@@ -228,7 +228,7 @@ const styles = (c) => StyleSheet.create({
     backgroundColor: c.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
-  
+
   sidebar: {
     position: 'absolute', right: 4, top: '25%',
     justifyContent: 'center', alignItems: 'center',

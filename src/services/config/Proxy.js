@@ -1,4 +1,4 @@
-import BaseResponse from './BaseResponse';
+import BaseResponse from '../../types/BaseResponse';
 
 // Hàm bọc chuẩn cho mọi query Supabase
 export const supabaseProxy = async (supabasePromise) => {

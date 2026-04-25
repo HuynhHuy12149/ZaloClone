@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { register } from '../../services/authService';
-import { useTheme } from '../../utils/ThemeContext';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { register } from '../../../services/supabaseService/authService';
+import { useTheme } from '../../../utils/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen({ navigation }) {
@@ -36,8 +37,8 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <KeyboardAvoidingView 
-        style={s.flex1} 
+      <KeyboardAvoidingView
+        style={s.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
@@ -90,7 +91,7 @@ export default function RegisterScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={s.loginBtn}
               onPress={handleRegister}
               disabled={loading}
@@ -105,7 +106,7 @@ export default function RegisterScreen({ navigation }) {
           </View>
 
           {/* Footer */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={s.registerLink}
             onPress={() => navigation.goBack()}
           >
@@ -122,20 +123,20 @@ export default function RegisterScreen({ navigation }) {
 const styles = (c) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: c.bg },
   flex1: { flex: 1 },
-  scrollContent: { 
-    flexGrow: 1, 
-    justifyContent: 'center', 
-    paddingHorizontal: 24, 
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 60,
   },
-  
+
   // Header
   headerBox: { alignItems: 'center', marginBottom: 40 },
-  iconWrap: { 
-    width: 72, height: 72, 
-    borderRadius: 24, 
-    backgroundColor: c.accent, 
+  iconWrap: {
+    width: 72, height: 72,
+    borderRadius: 24,
+    backgroundColor: c.accent,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 20,
     shadowColor: c.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 24, elevation: 8
