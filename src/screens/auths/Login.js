@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
-import { login } from '../../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { login, getProfile } from '../../services/authService';
+import { useAuthStore } from '../../utils/authStore';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const logInAction = useAuthStore((state) => state.logIn);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -15,10 +18,32 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     const response = await login(email, password);
-    setLoading(false);
-
+    
     if (!response.success) {
+      setLoading(false);
       Alert.alert('Đăng nhập thất bại', response.message);
+    } else {
+      try {
+        const user = response.data?.user;
+        if (user) {
+          const profileRes = await getProfile(user.id);
+          const profile = profileRes.success ? profileRes.data : null;
+          
+          const authInfo = {
+            id: user.id,
+            username: profile?.username || user.user_metadata?.username,
+            full_name: profile?.full_name || user.user_metadata?.full_name,
+            avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
+          };
+          
+          await AsyncStorage.setItem('auth_info', JSON.stringify(authInfo));
+          logInAction({ email, password }, authInfo);
+        }
+      } catch (error) {
+        console.error('Error saving auth info:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

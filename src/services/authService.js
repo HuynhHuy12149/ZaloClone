@@ -1,5 +1,6 @@
 import { supabase } from '../libs/supabase';
 import { supabaseProxy } from './Proxy';
+import { ServerEndpoint } from './ServerEndpoint';
 
 export const login = async (email, password) => {
   return await supabaseProxy(supabase.auth.signInWithPassword({ email, password }));
@@ -30,4 +31,16 @@ export const logout = async () => {
 
 export const getCurrentUser = async () => {
   return await supabaseProxy(supabase.auth.getUser());
+};
+
+export const getProfile = async (userId) => {
+  return await supabaseProxy(
+    supabase.from(ServerEndpoint.PROFILES).select('*').eq('id', userId).single()
+  );
+};
+
+export const updateProfileAvatar = async (userId, avatarUrl) => {
+  return await supabaseProxy(
+    supabase.from(ServerEndpoint.PROFILES).update({ avatar_url: avatarUrl }).eq('id', userId)
+  );
 };

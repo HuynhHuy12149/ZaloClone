@@ -12,12 +12,20 @@ type UserState = {
   hasCompletedOnboarding: boolean;
   isVip: boolean;
   _hasHydrated: boolean;
-  logIn: (payload: LoginProps) => boolean;
+  user?: {
+    id?: string;
+    username?: string;
+    fullName: string;
+    email?: string;
+    profilePic?: string | null;
+  };
+  logIn: (payload: LoginProps, userInfo?: { id: string, username: string, full_name: string, avatar_url: string | null }) => boolean;
   logOut: () => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
   logInAsVip: () => void;
   setHasHydrated: (value: boolean) => void;
+  updateUserAvatar: (avatar_url: string) => void;
 };
 
 export const useAuthStore = create(
@@ -28,22 +36,20 @@ export const useAuthStore = create(
       hasCompletedOnboarding: false,
       isVip: false,
       _hasHydrated: false,
-      logIn: (payload) => {
-        if (payload.email === "khoa@gmail.com" && payload.password === "123456") {
-          set((state) => {
-            return {
-              ...state,
-              isLoggedIn: true,
-              user: {
-                fullName: "Khoa Tran",
-                email: "khoa@gmail.com",
-                profilePic: "https://res.cloudinary.com/df4dqpvoz/image/upload/v1754452415/my_upload/mrof5rukwvfxmdiydhcc.jpg"
-              }
-            };
-          });
-          return true
+      logIn: (payload, userInfo?: { id: string, username: string, full_name: string, avatar_url: string | null }) => {
+        if (userInfo) {
+          set((state) => ({
+            ...state,
+            isLoggedIn: true,
+            user: {
+              id: userInfo.id,
+              username: userInfo.username,
+              fullName: userInfo.full_name,
+              profilePic: userInfo.avatar_url,
+            }
+          }));
+          return true;
         }
-        return false
       },
       logInAsVip: () => {
         set((state) => {
@@ -86,6 +92,12 @@ export const useAuthStore = create(
             _hasHydrated: value,
           };
         });
+      },
+      updateUserAvatar: (avatar_url: string) => {
+        set((state) => ({
+          ...state,
+          user: state.user ? { ...state.user, profilePic: avatar_url } : undefined,
+        }));
       },
     }),
     {

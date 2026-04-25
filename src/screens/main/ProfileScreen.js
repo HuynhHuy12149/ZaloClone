@@ -7,6 +7,9 @@ import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/ve
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../utils/ThemeContext';
+import { useAuthStore } from '../../utils/authStore';
+import { logout as supabaseLogout, updateProfileAvatar } from '../../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const QUICK_ACTIONS = [
   { icon: 'qr-code-outline', label: 'Mã QR\ncủa tôi', lib: 'ion' },
@@ -31,11 +34,23 @@ const SECTION3 = [
 
 export default function ProfileScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
+  const { user, logOut, updateUserAvatar } = useAuthStore();
   const insets = useSafeAreaInsets();
   const s = styles(colors);
 
-  const [avatarUri, setAvatarUri] = useState('https://i.pravatar.cc/150?u=me');
+  const [avatarUri, setAvatarUri] = useState(user?.profilePic || 'https://i.pravatar.cc/150?u=me');
   const [isUploading, setIsUploading] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await supabaseLogout();
+      await AsyncStorage.removeItem('auth_info');
+      logOut();
+    } catch (error) {
+      console.log('Error logging out:', error);
+      Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+    }
+  };
 
   const pickAndUploadImage = async () => {
     try {
@@ -85,6 +100,19 @@ export default function ProfileScreen() {
       const result = await response.json();
       if (result.secure_url) {
         setAvatarUri(result.secure_url);
+        updateUserAvatar(result.secure_url);
+
+        if (user?.id) {
+          await updateProfileAvatar(user.id, result.secure_url);
+
+          const authInfoStr = await AsyncStorage.getItem('auth_info');
+          if (authInfoStr) {
+            const authInfo = JSON.parse(authInfoStr);
+            authInfo.avatar_url = result.secure_url;
+            await AsyncStorage.setItem('auth_info', JSON.stringify(authInfo));
+          }
+        }
+
         Alert.alert('Thành công', 'Đã cập nhật ảnh đại diện');
       } else {
         throw new Error(result.error?.message || 'Upload failed');
@@ -122,9 +150,8 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
           <View style={s.profileMeta}>
-            <Text>{JSON.stringify(s)}</Text>
-            <Text style={s.profileName}>Huynh Huy</Text>
-            <Text style={s.profileSub}>Xem trang cá nhân</Text>
+            <Text style={s.profileName}>{user.fullName}</Text>
+            <Text style={s.profileSub}>{user.username}</Text>
           </View>
           <View style={s.profileRight}>
             <View style={[s.qrSmallBtn, { backgroundColor: colors.accentLight }]}>
@@ -187,6 +214,19 @@ export default function ProfileScreen() {
             ios_backgroundColor="#d1d5db"
           />
         </View>
+
+        <View style={s.gap} />
+
+        {/* Logout Button */}
+        <TouchableOpacity style={s.logoutBtn} activeOpacity={0.7} onPress={() => {
+          Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
+            { text: 'Hủy', style: 'cancel' },
+            { text: 'Đăng xuất', style: 'destructive', onPress: handleLogout }
+          ]);
+        }}>
+          <Ionicons name="log-out-outline" size={24} color="#ef4444" />
+          <Text style={s.logoutText}>Đăng xuất</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 50 }} />
       </ScrollView>
@@ -297,4 +337,13 @@ const styles = (c) => StyleSheet.create({
   toggleContent: { flex: 1, marginLeft: 14 },
   toggleTitle: { fontSize: 15, fontWeight: '500', color: c.text },
   toggleSub: { fontSize: 12, color: c.textSub, marginTop: 2 },
+
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14,
+    backgroundColor: c.bgCard,
+    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    gap: 8,
+  },
+  logoutText: { fontSize: 16, fontWeight: '600', color: '#ef4444' },
 });
