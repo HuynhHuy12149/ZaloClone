@@ -5,11 +5,11 @@ import {
   LayoutAnimation, Platform, UIManager
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getPosts } from '../../services/postService';
-import { supabase } from '../../libs/supabase';
-import ZaloHeader from '../../components/ZaloHeader';
-import AnimatedTabBar from '../../components/AnimatedTabBar';
-import { useTheme } from '../../utils/ThemeContext';
+import { getPosts } from '../../../services/supabaseService/postService';
+import { supabase } from '../../../libs/supabase';
+import ZaloHeader from '../../../components/ZaloHeader';
+import AnimatedTabBar from '../../../components/AnimatedTabBar';
+import { useTheme } from '../../../utils/ThemeContext';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {

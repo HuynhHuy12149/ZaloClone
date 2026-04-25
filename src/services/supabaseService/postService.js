@@ -1,6 +1,6 @@
-import { supabase } from '../libs/supabase';
-import { supabaseProxy } from './Proxy';
-import { ServerEndpoint } from './ServerEndpoint';
+import { supabase } from '../../libs/supabase';
+import { supabaseProxy } from '../config/Proxy';
+import { ServerEndpoint } from '../config/ServerEndpoint';
 
 // Lấy danh sách bài viết (kèm thông tin tác giả)
 export const getPosts = async () => {
@@ -15,7 +15,7 @@ export const getPosts = async () => {
 // Tạo bài viết mới
 export const createPost = async (content, mediaUrls = []) => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) return { success: false, message: 'Chưa đăng nhập' };
 
   return await supabaseProxy(

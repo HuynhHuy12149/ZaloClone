@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { login, getProfile } from '../../services/authService';
-import { useAuthStore } from '../../utils/authStore';
-import { useTheme } from '../../utils/ThemeContext';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { login, getProfile } from '../../../services/supabaseService/authService';
+import { useAuthStore } from '../../../store/authStore';
+import { useTheme } from '../../../utils/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
@@ -40,8 +40,7 @@ export default function LoginScreen({ navigation }) {
             avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
           };
 
-          await AsyncStorage.setItem('auth_info', JSON.stringify(authInfo));
-          logInAction({ email, password }, authInfo);
+          await logInAction(authInfo);
         }
       } catch (error) {
         console.error('Error saving auth info:', error);
@@ -53,8 +52,8 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <KeyboardAvoidingView 
-        style={s.flex1} 
+      <KeyboardAvoidingView
+        style={s.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
@@ -95,12 +94,12 @@ export default function LoginScreen({ navigation }) {
                 />
               </View>
             </View>
-            
+
             <TouchableOpacity style={s.forgotBtn}>
               <Text style={s.forgotText}>Quên mật khẩu?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={s.loginBtn}
               onPress={handleLogin}
               disabled={loading}
@@ -115,7 +114,7 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           {/* Footer */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={s.registerLink}
             onPress={() => navigation.navigate('Register')}
           >
@@ -132,20 +131,20 @@ export default function LoginScreen({ navigation }) {
 const styles = (c) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: c.bg },
   flex1: { flex: 1 },
-  scrollContent: { 
-    flexGrow: 1, 
-    justifyContent: 'center', 
-    paddingHorizontal: 24, 
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 60,
   },
-  
+
   // Header
   headerBox: { alignItems: 'center', marginBottom: 40 },
-  iconWrap: { 
-    width: 72, height: 72, 
-    borderRadius: 24, 
-    backgroundColor: c.accent, 
+  iconWrap: {
+    width: 72, height: 72,
+    borderRadius: 24,
+    backgroundColor: c.accent,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 20,
     shadowColor: c.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 24, elevation: 8

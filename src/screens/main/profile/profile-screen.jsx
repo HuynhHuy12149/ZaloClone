@@ -6,10 +6,9 @@ import {
 import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../utils/ThemeContext';
-import { useAuthStore } from '../../utils/authStore';
-import { logout as supabaseLogout, updateProfileAvatar } from '../../services/authService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../../utils/ThemeContext';
+import { useAuthStore } from '../../../store/authStore';
+import { logout as supabaseLogout, updateProfileAvatar } from '../../../services/supabaseService/authService';
 
 const { width } = Dimensions.get('window');
 
@@ -46,8 +45,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await supabaseLogout();
-      await AsyncStorage.removeItem('auth_info');
-      logOut();
+      await logOut();
     } catch (error) {
       console.log('Error logging out:', error);
       Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');

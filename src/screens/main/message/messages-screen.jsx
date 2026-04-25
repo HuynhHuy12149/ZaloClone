@@ -4,8 +4,8 @@ import {
   StyleSheet, StatusBar, ScrollView
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import ZaloHeader from '../../components/ZaloHeader';
-import { useTheme } from '../../utils/ThemeContext';
+import ZaloHeader from '../../../components/ZaloHeader';
+import { useTheme } from '../../../utils/ThemeContext';
 
 const CHATS = [
   { id: '1', name: 'Lop_NC312_T260', message: 'Ngoc Tran tham gia bằng link nhóm', time: '6 phút', count: 0, isGroup: true, unread: true, pinned: true },

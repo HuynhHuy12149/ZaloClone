@@ -1,4 +1,4 @@
-import { supabase } from '../libs/supabase';
+import { supabase } from '../../libs/supabase';
 
 // Lấy danh sách bài viết từ Supabase
 export async function getAllPostsFromSupabase() {

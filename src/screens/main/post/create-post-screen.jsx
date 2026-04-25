@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Alert,
-  ActivityIndicator, KeyboardAvoidingView, Platform,
-  Keyboard, Image, ScrollView, StyleSheet, Pressable,
+  ActivityIndicator, Platform, Keyboard, Image,
+  ScrollView, StyleSheet, Pressable,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, Entypo } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { createPost } from '../../services/postService';
-import { useTheme } from '../../utils/ThemeContext';
+import { createPost } from '../../../services/supabaseService/postService';
+import { useTheme } from '../../../utils/ThemeContext';
 
 export default function CreatePostScreen({ navigation }) {
   const [content, setContent] = useState('');
@@ -15,6 +15,25 @@ export default function CreatePostScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const s = styles(colors);
+
+  const [kbHeight, setKbHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKbHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKbHeight(0);
+    });
+    
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handlePost = async () => {
     if (!content.trim()) {
@@ -51,10 +70,7 @@ export default function CreatePostScreen({ navigation }) {
   ];
 
   return (
-    <KeyboardAvoidingView 
-      style={[s.root, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[s.root, { paddingTop: insets.top }]}>
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
@@ -120,12 +136,11 @@ export default function CreatePostScreen({ navigation }) {
             onChangeText={setContent}
             textAlignVertical="top"
           />
-
         </ScrollView>
       </Pressable>
 
       {/* Fixed bottom area */}
-      <View style={s.bottomArea}>
+      <View style={[s.bottomArea, { paddingBottom: kbHeight > 0 ? kbHeight : insets.bottom }]}>
         {/* Media option chips */}
         <View style={s.mediaScrollWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.mediaRow}>
@@ -142,7 +157,7 @@ export default function CreatePostScreen({ navigation }) {
         </View>
 
         {/* Bottom toolbar */}
-        <View style={[s.toolbar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <View style={[s.toolbar, { paddingBottom: kbHeight > 0 ? 8 : Math.max(insets.bottom, 8) }]}>
           {TOOLBAR_BTNS.map((btn, i) => (
             <TouchableOpacity key={i} style={s.toolbarBtn} hitSlop={6}>
               {btn.lib === 'mci'
@@ -163,7 +178,7 @@ export default function CreatePostScreen({ navigation }) {
           </View>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
