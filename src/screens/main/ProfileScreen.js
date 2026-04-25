@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  Switch, StyleSheet, ActivityIndicator, Alert
+  Switch, StyleSheet, ActivityIndicator, Alert, Dimensions
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,24 +11,26 @@ import { useAuthStore } from '../../utils/authStore';
 import { logout as supabaseLogout, updateProfileAvatar } from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const { width } = Dimensions.get('window');
+
 const QUICK_ACTIONS = [
-  { icon: 'qr-code-outline', label: 'Mã QR\ncủa tôi', lib: 'ion' },
-  { icon: 'wallet-outline', label: 'Ví\nZalo Pay', lib: 'ion' },
-  { icon: 'cloud-outline', label: 'Cloud\ncủa tôi', lib: 'ion' },
-  { icon: 'apps-outline', label: 'Thêm', lib: 'ion' },
+  { icon: 'qr-code-outline', label: 'Mã QR\ncủa tôi', lib: 'ion', color: '#ff6b6b' },
+  { icon: 'wallet-outline', label: 'Ví\nZalo Pay', lib: 'ion', color: '#4ecdc4' },
+  { icon: 'cloud-outline', label: 'Cloud\ncủa tôi', lib: 'ion', color: '#45b7d1' },
+  { icon: 'apps-outline', label: 'Thêm', lib: 'ion', color: '#9b59b6' },
 ];
 
 const SECTION1 = [
-  { icon: 'cloud-outline', lib: 'ion', color: '#0a84ff', title: 'zCloud', desc: 'Không gian lưu trữ dữ liệu trên đám mây' },
-  { icon: 'magic-staff', lib: 'mci', color: '#a78bfa', title: 'zStyle – Nổi bật trên Zalo', desc: 'Hình nền và nhạc cho cuộc gọi Zalo' },
+  { icon: 'cloud-outline', lib: 'ion', color: '#0a84ff', title: 'zCloud', desc: 'Lưu trữ đám mây' },
+  { icon: 'magic-staff', lib: 'mci', color: '#a78bfa', title: 'zStyle', desc: 'Nổi bật trên Zalo' },
 ];
 const SECTION2 = [
-  { icon: 'folder-outline', lib: 'ion', color: '#34d399', title: 'My Documents', desc: 'Lưu trữ các tin nhắn quan trọng' },
-  { icon: 'phone-portrait-outline', lib: 'ion', color: '#fb923c', title: 'Dữ liệu trên máy', desc: 'Quản lý dữ liệu Zalo của bạn' },
-  { icon: 'wallet-outline', lib: 'ion', color: '#60a5fa', title: 'Ví QR', desc: 'Lưu trữ và xuất trình các mã QR' },
+  { icon: 'folder-outline', lib: 'ion', color: '#34d399', title: 'My Documents' },
+  { icon: 'phone-portrait-outline', lib: 'ion', color: '#fb923c', title: 'Dữ liệu trên máy' },
+  { icon: 'wallet-outline', lib: 'ion', color: '#60a5fa', title: 'Ví QR' },
 ];
 const SECTION3 = [
-  { icon: 'shield-outline', lib: 'ion', color: '#f87171', title: 'Tài khoản và bảo mật' },
+  { icon: 'shield-outline', lib: 'ion', color: '#f87171', title: 'Tài khoản & bảo mật' },
   { icon: 'lock-closed-outline', lib: 'ion', color: '#818cf8', title: 'Quyền riêng tư' },
 ];
 
@@ -128,222 +130,230 @@ export default function ProfileScreen() {
   return (
     <View style={s.container}>
       {/* Header */}
-      <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={s.headerTitle}>Cá nhân</Text>
+      <View style={[s.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={s.headerTitle}>Hồ sơ</Text>
         <TouchableOpacity style={s.settingsBtn}>
-          <Ionicons name="settings-outline" size={24} color={colors.iconAction} />
+          <Ionicons name="settings-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
-        <TouchableOpacity style={s.profileCard} activeOpacity={0.8}>
-          <TouchableOpacity style={s.avatarWrap} onPress={pickAndUploadImage} disabled={isUploading}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
+        
+        {/* Profile Info - Center Aligned */}
+        <View style={s.profileHeader}>
+          <TouchableOpacity style={s.avatarWrap} onPress={pickAndUploadImage} disabled={isUploading} activeOpacity={0.8}>
             <Image source={{ uri: avatarUri }} style={s.avatar} />
             {isUploading && (
               <View style={[StyleSheet.absoluteFill, s.avatarOverlay]}>
-                <ActivityIndicator color="#ffffff" size="small" />
+                <ActivityIndicator color="#ffffff" size="large" />
               </View>
             )}
-            <View style={[s.emojiBadge, { backgroundColor: colors.bgCard }]}>
-              <Text style={{ fontSize: 12 }}>😊</Text>
+            <View style={[s.editBadge, { backgroundColor: colors.accent }]}>
+               <Ionicons name="camera" size={14} color="#fff" />
             </View>
           </TouchableOpacity>
-          <View style={s.profileMeta}>
-            <Text style={s.profileName}>{user.fullName}</Text>
-            <Text style={s.profileSub}>{user.username}</Text>
+          <Text style={s.profileName}>{user?.fullName || 'Người dùng Zalo'}</Text>
+          <Text style={s.profileSub}>@{user?.username || 'username'}</Text>
+          
+          <View style={s.profileActionsRow}>
+            <TouchableOpacity style={[s.pillBtn, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
+              <Text style={s.pillBtnText}>Cập nhật giới thiệu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.iconBtn, { backgroundColor: colors.bgCard }]} activeOpacity={0.8}>
+               <Ionicons name="qr-code" size={20} color={colors.text} />
+            </TouchableOpacity>
           </View>
-          <View style={s.profileRight}>
-            <View style={[s.qrSmallBtn, { backgroundColor: colors.accentLight }]}>
-              <Ionicons name="qr-code-outline" size={18} color={colors.accent} />
-            </View>
-            <MaterialCommunityIcons name="account-sync-outline" size={24} color={colors.icon} style={{ marginLeft: 10 }} />
-          </View>
-        </TouchableOpacity>
+        </View>
 
-        {/* Quick Actions */}
-        <View style={s.quickRow}>
+        {/* Bento Grid Actions */}
+        <View style={s.bentoContainer}>
           {QUICK_ACTIONS.map((item, i) => (
-            <React.Fragment key={item.label}>
-              <TouchableOpacity style={s.quickItem} activeOpacity={0.7}>
-                <View style={[s.quickIconBox, { backgroundColor: colors.accentLight }]}>
-                  <Ionicons name={item.icon} size={22} color={colors.icon} />
-                </View>
-                <Text style={s.quickLabel}>{item.label}</Text>
-              </TouchableOpacity>
-              {i < QUICK_ACTIONS.length - 1 && <View style={s.quickDivider} />}
-            </React.Fragment>
+            <TouchableOpacity key={item.label} style={[s.bentoBox, { backgroundColor: item.color + '15' }]} activeOpacity={0.7}>
+              <View style={[s.bentoIcon, { backgroundColor: item.color + '30' }]}>
+                <Ionicons name={item.icon} size={26} color={item.color} />
+              </View>
+              <Text style={[s.bentoLabel, { color: colors.text }]}>{item.label.replace('\n', ' ')}</Text>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <View style={s.gap} />
-
-        {/* Section 1 */}
-        {SECTION1.map((item) => <ProfileItem key={item.title} item={item} colors={colors} />)}
-
-        <View style={s.gap} />
-
-        {/* Section 2 */}
-        {SECTION2.map((item) => <ProfileItem key={item.title} item={item} colors={colors} />)}
-
-        <View style={s.gap} />
-
-        {/* Section 3 */}
-        {SECTION3.map((item) => <ProfileItem key={item.title} item={item} colors={colors} />)}
-
-        <View style={s.gap} />
-
-        {/* Dark Mode Toggle */}
-        <View style={s.toggleRow}>
-          <View style={[s.toggleIcon, { backgroundColor: isDark ? '#2a1f5c' : '#fef3c7' }]}>
-            <Ionicons
-              name={isDark ? 'moon' : 'sunny'}
-              size={21}
-              color={isDark ? '#a78bfa' : '#f59e0b'}
-            />
-          </View>
-          <View style={s.toggleContent}>
-            <Text style={s.toggleTitle}>Giao diện tối</Text>
-            <Text style={s.toggleSub}>{isDark ? 'Đang bật' : 'Đang tắt'}</Text>
-          </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            trackColor={{ false: '#d1d5db', true: colors.accent }}
-            thumbColor="#ffffff"
-            ios_backgroundColor="#d1d5db"
-          />
+        {/* Grouped Lists */}
+        <View style={s.listGroup}>
+          {SECTION1.map((item, i) => <ProfileItem key={item.title} item={item} colors={colors} isLast={i === SECTION1.length - 1} />)}
         </View>
 
-        <View style={s.gap} />
+        <View style={s.listGroup}>
+          {SECTION2.map((item, i) => <ProfileItem key={item.title} item={item} colors={colors} isLast={i === SECTION2.length - 1} />)}
+        </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={s.logoutBtn} activeOpacity={0.7} onPress={() => {
+        <View style={s.listGroup}>
+          {SECTION3.map((item, i) => <ProfileItem key={item.title} item={item} colors={colors} isLast={i === SECTION3.length - 1} />)}
+        </View>
+
+        {/* Dark Mode */}
+        <View style={s.listGroup}>
+          <View style={s.toggleRow}>
+            <View style={[s.itemIconBox, { backgroundColor: isDark ? '#2a1f5c' : '#fef3c7' }]}>
+              <Ionicons
+                name={isDark ? 'moon' : 'sunny'}
+                size={22}
+                color={isDark ? '#a78bfa' : '#f59e0b'}
+              />
+            </View>
+            <View style={s.itemContent}>
+              <Text style={s.itemTitle}>Giao diện tối</Text>
+              <Text style={s.itemDesc}>{isDark ? 'Bật' : 'Tắt'}</Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: '#d1d5db', true: colors.accent }}
+              thumbColor="#ffffff"
+              ios_backgroundColor="#d1d5db"
+            />
+          </View>
+        </View>
+
+        {/* Logout */}
+        <TouchableOpacity style={s.logoutBtn} activeOpacity={0.8} onPress={() => {
           Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
             { text: 'Hủy', style: 'cancel' },
             { text: 'Đăng xuất', style: 'destructive', onPress: handleLogout }
           ]);
         }}>
-          <Ionicons name="log-out-outline" size={24} color="#ef4444" />
-          <Text style={s.logoutText}>Đăng xuất</Text>
+          <Text style={s.logoutText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
-
-        <View style={{ height: 50 }} />
+        
       </ScrollView>
     </View>
   );
 }
 
-function ProfileItem({ item, colors }) {
+function ProfileItem({ item, colors, isLast }) {
   const s = styles(colors);
   return (
-    <TouchableOpacity style={s.item} activeOpacity={0.7}>
+    <TouchableOpacity style={[s.item, !isLast && s.itemBorder]} activeOpacity={0.7}>
       <View style={[s.itemIconBox, { backgroundColor: item.color + '1a' }]}>
         {item.lib === 'ion'
-          ? <Ionicons name={item.icon} size={21} color={item.color} />
-          : <MaterialCommunityIcons name={item.icon} size={21} color={item.color} />
+          ? <Ionicons name={item.icon} size={22} color={item.color} />
+          : <MaterialCommunityIcons name={item.icon} size={22} color={item.color} />
         }
       </View>
       <View style={s.itemContent}>
         <Text style={s.itemTitle}>{item.title}</Text>
         {item.desc && <Text style={s.itemDesc} numberOfLines={1}>{item.desc}</Text>}
       </View>
-      <Entypo name="chevron-small-right" size={22} color={colors.iconSub} />
+      <Entypo name="chevron-small-right" size={24} color={colors.iconSub || '#999'} />
     </TouchableOpacity>
   );
 }
 
 const styles = (c) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.bg },
-
+  container: { flex: 1, backgroundColor: c.bg }, 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 24, paddingBottom: 16,
+    backgroundColor: c.bg,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: c.text },
-  settingsBtn: { padding: 4 },
+  headerTitle: { fontSize: 28, fontWeight: '800', color: c.text, letterSpacing: -0.5 },
+  settingsBtn: { 
+    width: 44, height: 44, borderRadius: 22, 
+    backgroundColor: c.bgCard, 
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
+  },
 
-  profileCard: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 16,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+
+  profileHeader: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 24,
   },
-  avatarWrap: { position: 'relative' },
-  avatar: { width: 68, height: 68, borderRadius: 34, backgroundColor: c.bgInput },
+  avatarWrap: { 
+    marginBottom: 16,
+    shadowColor: c.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8
+  },
+  avatar: { width: 110, height: 110, borderRadius: 40, backgroundColor: c.bgInput },
   avatarOverlay: {
     backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 34,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emojiBadge: {
-    position: 'absolute', bottom: -2, right: -2,
-    width: 24, height: 24, borderRadius: 12,
+  editBadge: {
+    position: 'absolute', bottom: -4, right: -4,
+    width: 32, height: 32, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: c.bg,
+    borderWidth: 3, borderColor: c.bg,
   },
-  profileMeta: { flex: 1, marginLeft: 14 },
-  profileName: { fontSize: 18, fontWeight: '700', color: c.text },
-  profileSub: { fontSize: 13, color: c.textSub, marginTop: 3 },
-  profileRight: { flexDirection: 'row', alignItems: 'center' },
-  qrSmallBtn: {
-    width: 36, height: 36, borderRadius: 18,
+  profileName: { fontSize: 24, fontWeight: '800', color: c.text, marginBottom: 4 },
+  profileSub: { fontSize: 15, fontWeight: '500', color: c.textSub, marginBottom: 20 },
+  
+  profileActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pillBtn: {
+    paddingHorizontal: 24, paddingVertical: 12,
+    borderRadius: 24,
+  },
+  pillBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  iconBtn: {
+    width: 46, height: 46, borderRadius: 23,
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2
   },
 
-  quickRow: {
-    flexDirection: 'row', alignItems: 'center',
+  bentoContainer: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between',
+    marginBottom: 24, gap: 12,
+  },
+  bentoBox: {
+    width: (width - 40 - 12) / 2,
     backgroundColor: c.bgCard,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    borderRadius: 24,
+    padding: 16,
+    alignItems: 'flex-start',
   },
-  quickItem: { flex: 1, alignItems: 'center', gap: 7 },
-  quickIconBox: {
-    width: 44, height: 44, borderRadius: 22,
+  bentoIcon: {
+    width: 48, height: 48, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
+    marginBottom: 12,
   },
-  quickLabel: { fontSize: 11, color: c.text, textAlign: 'center' },
-  quickDivider: { width: 0.5, height: 40, backgroundColor: c.border },
+  bentoLabel: { fontSize: 15, fontWeight: '700' },
 
-  gap: { height: 8, backgroundColor: c.bg },
-
+  listGroup: {
+    backgroundColor: c.bgCard,
+    borderRadius: 24,
+    marginBottom: 16,
+    paddingVertical: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 1,
+  },
   item: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 12,
+  },
+  itemBorder: {
+    borderBottomWidth: 1, borderBottomColor: c.border + '60',
   },
   itemIconBox: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 44, height: 44, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },
-  itemContent: { flex: 1, marginLeft: 14 },
-  itemTitle: { fontSize: 15, fontWeight: '500', color: c.text },
-  itemDesc: { fontSize: 12, color: c.textSub, marginTop: 2 },
+  itemContent: { flex: 1, marginLeft: 16 },
+  itemTitle: { fontSize: 16, fontWeight: '600', color: c.text, marginBottom: 2 },
+  itemDesc: { fontSize: 13, color: c.textSub },
 
   toggleRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 13,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
-  toggleIcon: {
-    width: 40, height: 40, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  toggleContent: { flex: 1, marginLeft: 14 },
-  toggleTitle: { fontSize: 15, fontWeight: '500', color: c.text },
-  toggleSub: { fontSize: 12, color: c.textSub, marginTop: 2 },
 
   logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14,
-    backgroundColor: c.bgCard,
-    borderBottomWidth: 0.5, borderBottomColor: c.border,
-    gap: 8,
+    backgroundColor: '#ff475715',
+    borderRadius: 24,
+    paddingVertical: 18,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: 8,
   },
-  logoutText: { fontSize: 16, fontWeight: '600', color: '#ef4444' },
+  logoutText: { fontSize: 16, fontWeight: '700', color: '#ff4757' },
 });
+
