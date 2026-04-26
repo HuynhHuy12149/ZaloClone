@@ -7,7 +7,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useTheme } from '../../../../utils/ThemeContext';
-import { getMessages, sendMessage, markMessagesAsRead } from '../../../../services/supabaseService/messageService';
+import { getMessages, sendMessage, markMessagesAsRead, addMemberToGroup, getAllProfiles } from '../../../../services/supabaseService/messageService';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../libs/supabase';
 
@@ -18,10 +18,10 @@ export default function MessageDetailScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
 
   // Params from navigation (with fallbacks for testing)
-  const { conversationId, chatName, avatar } = route?.params || {};
+  const { conversationId, chatName, avatar, isGroup } = route?.params || {};
 
   // Create a unique conversation ID from the two user IDs
-  const chatRoomId = [currentUser?.id, conversationId].sort().join('-');
+  const chatRoomId = isGroup ? conversationId : [currentUser?.id, conversationId].sort().join('-');
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -31,6 +31,29 @@ export default function MessageDetailScreen({ route, navigation }) {
   const [hasMore, setHasMore] = useState(true);
   const limit = 10;
   const flatListRef = useRef(null);
+  
+  // Add Member State
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [friendsList, setFriendsList] = useState([]);
+  
+  useEffect(() => {
+    if (showAddMember && friendsList.length === 0) {
+      getAllProfiles().then(res => {
+         if (res.data) setFriendsList(res.data.filter(u => u.id !== currentUser?.id));
+      }).catch(console.error);
+    }
+  }, [showAddMember]);
+
+  const handleAddFriendToGroup = async (userId) => {
+    try {
+      await addMemberToGroup(chatRoomId, userId);
+      alert('Đã thêm thành viên');
+      setShowAddMember(false);
+    } catch (e) {
+      alert('Thêm thành viên thất bại hoặc đã có trong nhóm');
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     fetchMessages(1);
@@ -43,11 +66,24 @@ export default function MessageDetailScreen({ route, navigation }) {
     // Subscribe to new messages
     const subscription = supabase
       .channel(`room:${chatRoomId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatRoomId}` }, payload => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatRoomId}` }, async payload => {
+        if (payload.new.sender_id === currentUser?.id) return; // Ignore own messages from realtime
+
+        // Fetch sender profile to show avatar and name correctly
+        const { data: senderData } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, full_name')
+          .eq('id', payload.new.sender_id)
+          .single();
+
+        const newMsg = {
+          ...payload.new,
+          sender: senderData || null
+        };
+
         setMessages(prev => {
-          // Check if message already exists (to avoid duplicates from optimistic update)
-          if (prev.find(m => m.id === payload.new.id)) return prev;
-          return [payload.new, ...prev];
+          if (prev.find(m => m.id === newMsg.id)) return prev;
+          return [newMsg, ...prev];
         });
       })
       .subscribe();
@@ -113,16 +149,22 @@ export default function MessageDetailScreen({ route, navigation }) {
 
   const renderMessage = ({ item }) => {
     const isMe = item.sender_id === currentUser?.id;
+    const senderAvatar = item.sender?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.sender?.full_name || item.sender?.username || 'U')}&background=random`;
 
     return (
       <View style={[s.messageWrapper, isMe ? s.messageWrapperRight : s.messageWrapperLeft]}>
         {!isMe && (
-          <Image source={{ uri: avatar }} style={s.messageAvatar} />
+          <Image source={{ uri: isGroup ? senderAvatar : (avatar || senderAvatar) }} style={s.messageAvatar} />
         )}
-        <View style={[s.bubble, isMe ? s.bubbleRight : s.bubbleLeft]}>
-          <Text style={[s.messageText, isMe ? s.messageTextRight : s.messageTextLeft]}>
-            {item.content}
-          </Text>
+        <View style={{ maxWidth: '75%' }}>
+          {isGroup && !isMe && (
+            <Text style={s.senderName}>{item.sender?.full_name || item.sender?.username}</Text>
+          )}
+          <View style={[s.bubble, isMe ? s.bubbleRight : s.bubbleLeft]}>
+            <Text style={[s.messageText, isMe ? s.messageTextRight : s.messageTextLeft]}>
+              {item.content}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -152,6 +194,11 @@ export default function MessageDetailScreen({ route, navigation }) {
             </View>
 
             <View style={s.headerActions}>
+              {isGroup && (
+                <TouchableOpacity style={s.headerBtnAction} onPress={() => setShowAddMember(true)}>
+                  <Feather name="user-plus" size={18} color={colors.iconAction || colors.text} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={s.headerBtnAction}>
                 <Feather name="phone" size={18} color={colors.iconAction || colors.text} />
               </TouchableOpacity>
@@ -164,63 +211,95 @@ export default function MessageDetailScreen({ route, navigation }) {
             </View>
           </View>
 
-          {/* Messages List */}
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.accent} style={{ flex: 1 }} />
-          ) : (
-            <FlatList
-              style={{ flex: 1 }}
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={item => item.id}
-              renderItem={renderMessage}
-              contentContainerStyle={s.listContent}
-              showsVerticalScrollIndicator={false}
-              inverted
-              onEndReached={() => {
-                if (hasMore && !loadingMore && !loading) {
-                  const nextPage = page + 1;
-                  setPage(nextPage);
-                  fetchMessages(nextPage);
-                }
-              }}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 10 }} /> : null}
-            />
-          )}
-
-          {/* Input Area */}
-          <View style={[s.inputContainer, { marginBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom - 10, 12) }]}>
-            <TouchableOpacity style={s.attachBtn}>
-              <Feather name="plus" size={26} color={colors.iconAction || colors.text} />
-            </TouchableOpacity>
-
-            <View style={s.inputWrapper}>
-              <TextInput
-                style={s.input}
-                placeholder="Tin nhắn..."
-                placeholderTextColor={colors.textMuted || '#999'}
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={1000}
-              />
-              <TouchableOpacity style={s.iconInsideBtn}>
-                <Feather name="smile" size={24} color={colors.iconAction || colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {inputText.trim().length > 0 ? (
-              <TouchableOpacity style={s.sendBtn} onPress={handleSend}>
-                <Ionicons name="send" size={20} color="#fff" />
-              </TouchableOpacity>
+          {/* Main Content Area */}
+          <View style={{ flex: 1 }}>
+            {/* Messages List */}
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.accent} style={{ flex: 1 }} />
             ) : (
-              <TouchableOpacity style={s.attachBtn}>
-                <Feather name="mic" size={24} color={colors.iconAction || colors.text} />
-              </TouchableOpacity>
+              <FlatList
+                style={{ flex: 1 }}
+                ref={flatListRef}
+                data={messages}
+                keyExtractor={item => item.id}
+                renderItem={renderMessage}
+                contentContainerStyle={[s.listContent, { paddingTop: Platform.OS === 'android' ? 80 : 90 }]}
+                showsVerticalScrollIndicator={false}
+                inverted
+                onEndReached={() => {
+                  if (hasMore && !loadingMore && !loading) {
+                    const nextPage = page + 1;
+                    setPage(nextPage);
+                    fetchMessages(nextPage);
+                  }
+                }}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 10 }} /> : null}
+              />
             )}
+
+            {/* Floating Input Area */}
+            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+              <View style={[s.inputContainer, { marginBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom - 10, 12) }]}>
+                <TouchableOpacity style={s.attachBtn}>
+                  <Feather name="plus" size={26} color={colors.iconAction || colors.text} />
+                </TouchableOpacity>
+
+                <View style={s.inputWrapper}>
+                  <TextInput
+                    style={s.input}
+                    placeholder="Tin nhắn..."
+                    placeholderTextColor={colors.textMuted || '#999'}
+                    value={inputText}
+                    onChangeText={setInputText}
+                    multiline
+                    maxLength={1000}
+                  />
+                  <TouchableOpacity style={s.iconInsideBtn}>
+                    <Feather name="smile" size={24} color={colors.iconAction || colors.text} />
+                  </TouchableOpacity>
+                </View>
+
+                {inputText.trim().length > 0 ? (
+                  <TouchableOpacity style={s.sendBtn} onPress={handleSend}>
+                    <Ionicons name="send" size={20} color="#fff" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={s.attachBtn}>
+                    <Feather name="mic" size={24} color={colors.iconAction || colors.text} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           </View>
         </KeyboardAvoidingView>
+        
+        {/* Add Member Modal */}
+        {showAddMember && (
+          <View style={s.modalOverlay}>
+            <View style={s.modalContainer}>
+              <Text style={s.modalTitle}>Thêm thành viên</Text>
+              <FlatList 
+                data={friendsList}
+                keyExtractor={item => item.id}
+                style={{ maxHeight: 300, width: '100%' }}
+                renderItem={({ item: f }) => (
+                  <View style={s.friendRow}>
+                    <Image source={{ uri: f.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.full_name || f.username)}&background=random` }} style={s.friendAvatar} />
+                    <Text style={s.friendName}>{f.full_name || f.username}</Text>
+                    <TouchableOpacity style={s.addBtn} onPress={() => handleAddFriendToGroup(f.id)}>
+                      <Text style={s.addBtnText}>Thêm</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+              <TouchableOpacity style={s.modalBtnClose} onPress={() => setShowAddMember(false)}>
+                <Text style={s.modalBtnTextClose}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
       </SafeAreaView>
     </>
   );
@@ -321,8 +400,13 @@ const styles = (c) => StyleSheet.create({
     borderRadius: 16,
     marginRight: 8,
   },
+  senderName: {
+    fontSize: 12,
+    color: c.textMuted || '#888',
+    marginLeft: 4,
+    marginBottom: 2,
+  },
   bubble: {
-    maxWidth: '75%',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -362,7 +446,6 @@ const styles = (c) => StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: c.bgCard,
     marginHorizontal: 16,
-    // marginBottom is handled via style prop
     marginTop: 8,
     borderRadius: 30, // More rounded modern look
     shadowColor: '#000',
@@ -417,4 +500,14 @@ const styles = (c) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
+  modalContainer: { width: '85%', backgroundColor: c.bgCard, borderRadius: 16, padding: 20, maxHeight: '80%', alignItems: 'center' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: c.text, marginBottom: 16 },
+  friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, width: '100%' },
+  friendAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: 12 },
+  friendName: { fontSize: 16, color: c.text, flex: 1 },
+  addBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.accent, borderRadius: 6 },
+  addBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  modalBtnClose: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8, backgroundColor: c.bgInput, marginTop: 16 },
+  modalBtnTextClose: { color: c.text, fontWeight: '600' },
 });
