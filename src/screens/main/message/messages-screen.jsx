@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
-  StyleSheet, StatusBar, ScrollView, ActivityIndicator
+  StyleSheet, StatusBar, ScrollView, ActivityIndicator, Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
@@ -28,6 +28,10 @@ export default function MessagesScreen({ navigation }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [latestMessages, setLatestMessages] = useState({});
+  
+  // Notification State & Animation
+  const [notification, setNotification] = useState(null);
+  const slideAnim = useRef(new Animated.Value(-150)).current;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,6 +82,11 @@ export default function MessagesScreen({ navigation }) {
           const otherUserId = newMsg.conversation_id.split('-').find(id => id !== currentUser.id);
           
           if (otherUserId) {
+            // Show notification if it's from someone else
+            if (newMsg.sender_id !== currentUser.id) {
+              setNotification(newMsg);
+            }
+
             setLatestMessages(prev => ({
               ...prev,
               [otherUserId]: newMsg
@@ -121,6 +130,32 @@ export default function MessagesScreen({ navigation }) {
       supabase.removeChannel(subscription);
     };
   }, [currentUser]);
+
+  // Handle Notification Animation
+  useEffect(() => {
+    if (notification) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 60,
+        friction: 8,
+      }).start();
+      
+      const timer = setTimeout(() => {
+        closeNotification();
+      }, 4000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const closeNotification = () => {
+    Animated.timing(slideAnim, {
+      toValue: -150,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setNotification(null));
+  };
 
   const renderItem = ({ item }) => {
     const latestMsg = latestMessages[item.id];
@@ -179,6 +214,43 @@ export default function MessagesScreen({ navigation }) {
         ]}
       />
       
+      {/* Animated Notification Banner */}
+      {notification && (
+        <Animated.View style={[s.notificationBanner, { transform: [{ translateY: slideAnim }] }]}>
+          <TouchableOpacity 
+            style={s.notificationContent}
+            activeOpacity={0.8}
+            onPress={() => {
+               closeNotification();
+               const senderUser = users.find(u => u.id === notification.sender_id);
+               if (senderUser) {
+                 navigation.navigate('MessageDetail', {
+                   conversationId: senderUser.id,
+                   chatName: senderUser.full_name || senderUser.username,
+                   avatar: senderUser.avatar_url || `https://ui-avatars.com/api/?name=${senderUser.full_name || senderUser.username}&background=random`
+                 });
+               }
+            }}
+          >
+            {(() => {
+              const senderUser = users.find(u => u.id === notification.sender_id);
+              const avatarUrl = senderUser?.avatar_url || `https://ui-avatars.com/api/?name=${senderUser?.full_name || senderUser?.username || 'U'}&background=random`;
+              const name = senderUser?.full_name || senderUser?.username || 'Tin nhắn mới';
+              
+              return (
+                <>
+                  <Image source={{ uri: avatarUrl }} style={s.notificationAvatar} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.notificationTitle} numberOfLines={1}>{name}</Text>
+                    <Text style={s.notificationText} numberOfLines={1}>{notification.content}</Text>
+                  </View>
+                </>
+              );
+            })()}
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       {/* Filter chips */}
       <View style={s.filterRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterScroll}>
@@ -215,6 +287,43 @@ export default function MessagesScreen({ navigation }) {
 
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
+  notificationBanner: {
+    position: 'absolute',
+    top: 90, 
+    left: 16,
+    right: 16,
+    zIndex: 1000,
+  },
+  notificationContent: {
+    backgroundColor: c.bgCard,
+    borderRadius: 20,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: c.border + '30',
+  },
+  notificationAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+  },
+  notificationTitle: {
+    color: c.text,
+    fontWeight: '700',
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  notificationText: {
+    color: c.textSub,
+    fontSize: 14,
+  },
   filterRow: {
     paddingVertical: 12,
   },
