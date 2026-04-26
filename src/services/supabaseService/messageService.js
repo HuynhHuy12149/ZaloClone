@@ -2,6 +2,13 @@ import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
 import { ServerEndpoint } from '../../constants/ServerEndpoint';
 
+
+export const getAllProfiles = async () => {
+  return await supabaseProxy(
+    supabase.from(ServerEndpoint.PROFILES).select('*')
+  );
+};
+
 // Fetch messages for a specific conversation
 export const getMessages = async (conversationId, page = 1, limit = 15) => {
   const from = (page - 1) * limit;
@@ -38,5 +45,17 @@ export const markMessagesAsRead = async (conversationId, userId) => {
       .update({ is_read: true })
       .eq('conversation_id', conversationId)
       .neq('sender_id', userId)
+  );
+};
+
+// Fetch latest messages for all conversations of a user
+export const getLatestMessagesForUser = async (userId) => {
+  return await supabaseProxy(
+    supabase
+      .from('messages')
+      .select('*')
+      .ilike('conversation_id', `%${userId}%`)
+      .order('created_at', { ascending: false })
+      .limit(500)
   );
 };
