@@ -10,6 +10,7 @@ import { useTheme } from '../../../../context/ThemeContext';
 import { getMessages, sendMessage, markMessagesAsRead, addMemberToGroup, getAllProfiles } from '../../../../services/supabaseService/messageService';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../libs/supabase';
+import ChatInput from './chat-input';
 
 export default function MessageDetailScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -35,6 +36,7 @@ export default function MessageDetailScreen({ route, navigation }) {
   // Add Member State
   const [showAddMember, setShowAddMember] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
 
   useEffect(() => {
     if (showAddMember && friendsList.length === 0) {
@@ -239,38 +241,15 @@ export default function MessageDetailScreen({ route, navigation }) {
             )}
 
             {/* Floating Input Area */}
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-              <View style={[s.inputContainer, { marginBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom - 10, 12) }]}>
-                <TouchableOpacity style={s.attachBtn}>
-                  <Feather name="plus" size={26} color={colors.iconAction || colors.text} />
-                </TouchableOpacity>
-
-                <View style={s.inputWrapper}>
-                  <TextInput
-                    style={s.input}
-                    placeholder="Tin nhắn..."
-                    placeholderTextColor={colors.textMuted || '#999'}
-                    value={inputText}
-                    onChangeText={setInputText}
-                    multiline
-                    maxLength={1000}
-                  />
-                  <TouchableOpacity style={s.iconInsideBtn}>
-                    <Feather name="smile" size={24} color={colors.iconAction || colors.text} />
-                  </TouchableOpacity>
-                </View>
-
-                {inputText.trim().length > 0 ? (
-                  <TouchableOpacity style={s.sendBtn} onPress={handleSend}>
-                    <Ionicons name="send" size={20} color="#fff" />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={s.attachBtn}>
-                    <Feather name="mic" size={24} color={colors.iconAction || colors.text} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+            <ChatInput
+              inputText={inputText}
+              setInputText={setInputText}
+              showPlusMenu={showPlusMenu}
+              setShowPlusMenu={setShowPlusMenu}
+              handleSend={handleSend}
+              insets={insets}
+              colors={colors}
+            />
           </View>
         </KeyboardAvoidingView>
 
@@ -438,67 +417,6 @@ const styles = (c) => StyleSheet.create({
   },
   messageTextRight: {
     color: '#fff',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    backgroundColor: c.bgCard,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 30, // More rounded modern look
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8, // Higher elevation to cast distinct shadow on Android
-    borderWidth: 1,
-    borderColor: c.border + '20', // Subtle border
-  },
-  attachBtn: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4, // Better alignment
-  },
-  inputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.bgInput || '#F0F2F5',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-    marginHorizontal: 8,
-    minHeight: 44,
-    maxHeight: 120,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: c.text,
-    paddingTop: 0,
-    paddingBottom: 0,
-    marginTop: Platform.OS === 'ios' ? 2 : 0,
-  },
-  iconInsideBtn: {
-    paddingLeft: 8,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: c.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4,
-    marginBottom: 2,
-    shadowColor: c.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
   modalContainer: { width: '85%', backgroundColor: c.bgCard, borderRadius: 16, padding: 20, maxHeight: '80%', alignItems: 'center' },
