@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { REACTIONS } from '../../../../../utils/postEnums';
+import { REACTIONS } from '../../../../../utils/constants/postEnums';
 
 const REACTION_STYLE = {
   heart: { color: '#FF4757' },
@@ -22,14 +22,14 @@ export default function ReactionStats({ types = [], count = 0, colors }) {
         {types.slice(0, 3).map((type, idx) => {
           const reaction = REACTIONS.find(r => r.id === type) || REACTIONS[0];
           const style = REACTION_STYLE[type];
-          
+
           return (
-            <View 
-              key={type} 
+            <View
+              key={type}
               style={[
-                styles.emojiCircle, 
-                { 
-                  backgroundColor: style?.color || '#FFD32D', 
+                styles.emojiCircle,
+                {
+                  backgroundColor: style?.color || '#FFD32D',
                   zIndex: 10 - idx,
                   marginLeft: idx > 0 ? -6 : 0
                 }
@@ -56,18 +56,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  emojiCircle: { 
-    width: 20, 
-    height: 20, 
-    borderRadius: 10, 
-    alignItems: 'center', 
+  emojiCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFF' 
+    borderColor: '#FFF'
   },
-  statsText: { 
-    fontSize: 13, 
-    marginLeft: 6, 
-    fontWeight: '600' 
+  statsText: {
+    fontSize: 13,
+    marginLeft: 6,
+    fontWeight: '600'
   },
 });

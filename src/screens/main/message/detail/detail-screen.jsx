@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useTheme } from '../../../../utils/ThemeContext';
+import { useTheme } from '../../../../context/ThemeContext';
 import { getMessages, sendMessage, markMessagesAsRead, addMemberToGroup, getAllProfiles } from '../../../../services/supabaseService/messageService';
 import { useAuthStore } from '../../../../store/authStore';
 import { supabase } from '../../../../libs/supabase';
@@ -31,15 +31,15 @@ export default function MessageDetailScreen({ route, navigation }) {
   const [hasMore, setHasMore] = useState(true);
   const limit = 10;
   const flatListRef = useRef(null);
-  
+
   // Add Member State
   const [showAddMember, setShowAddMember] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
-  
+
   useEffect(() => {
     if (showAddMember && friendsList.length === 0) {
       getAllProfiles().then(res => {
-         if (res.data) setFriendsList(res.data.filter(u => u.id !== currentUser?.id));
+        if (res.data) setFriendsList(res.data.filter(u => u.id !== currentUser?.id));
       }).catch(console.error);
     }
   }, [showAddMember]);
@@ -273,13 +273,13 @@ export default function MessageDetailScreen({ route, navigation }) {
             </View>
           </View>
         </KeyboardAvoidingView>
-        
+
         {/* Add Member Modal */}
         {showAddMember && (
           <View style={s.modalOverlay}>
             <View style={s.modalContainer}>
               <Text style={s.modalTitle}>Thêm thành viên</Text>
-              <FlatList 
+              <FlatList
                 data={friendsList}
                 keyExtractor={item => item.id}
                 style={{ maxHeight: 300, width: '100%' }}
@@ -299,7 +299,7 @@ export default function MessageDetailScreen({ route, navigation }) {
             </View>
           </View>
         )}
-        
+
       </SafeAreaView>
     </>
   );

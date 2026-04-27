@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import Avatar from './Avatar';
 import { useAuthStore } from '../store/authStore';
 import { getAcceptedFriends } from '../services/supabaseService/friendService';
@@ -18,7 +18,7 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
   const { colors } = useTheme();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
-  
+
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [friends, setFriends] = useState([]);
@@ -64,7 +64,7 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
         const friendList = response.data.map(row => {
           return row.user?.id === user.id ? row.friend : row.user;
         }).filter(p => p !== null);
-        
+
         setFriends(friendList);
       }
     } catch (e) {
@@ -88,7 +88,7 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
     hide();
   };
 
-  const filteredFriends = friends.filter(f => 
+  const filteredFriends = friends.filter(f =>
     f.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     f.username?.toLowerCase().includes(search.toLowerCase())
   );
@@ -96,9 +96,9 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
   const renderItem = ({ item }) => {
     const isSelected = selectedFriends.some(f => f.id === item.id);
     return (
-      <TouchableOpacity 
-        style={[s.friendItem, { borderBottomColor: colors.border + '20' }]} 
-        onPress={() => toggleFriend(item)} 
+      <TouchableOpacity
+        style={[s.friendItem, { borderBottomColor: colors.border + '20' }]}
+        onPress={() => toggleFriend(item)}
         activeOpacity={0.7}
       >
         <Avatar
@@ -127,26 +127,26 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
     >
       <View style={s.container}>
         <TouchableWithoutFeedback onPress={hide}>
-          <Animated.View 
+          <Animated.View
             style={[
-              s.backdrop, 
+              s.backdrop,
               { opacity: backdropOpacity, backgroundColor: 'rgba(0,0,0,0.5)' }
-            ]} 
+            ]}
           />
         </TouchableWithoutFeedback>
-        
-        <Animated.View 
+
+        <Animated.View
           style={[
             s.sheetWrap,
             { transform: [{ translateY: sheetTranslateY }] }
           ]}
         >
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[s.sheet, { backgroundColor: colors.bgCard, height: SCREEN_HEIGHT * 0.85 }]}
           >
             <View style={[s.handle, { backgroundColor: colors.border }]} />
-            
+
             <View style={s.header}>
               <TouchableOpacity onPress={hide} style={s.headerBtn}>
                 <Text style={[s.cancelText, { color: colors.text }]}>Hủy</Text>

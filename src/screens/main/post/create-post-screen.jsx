@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { createPost } from '../../../services/supabaseService/postService';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { useAuthStore } from '../../../store/authStore';
 import { uploadImageToCloudinary } from '../../../utils/cloudinaryClient';
 import { compressImage } from '../../../utils/imageUtils';
@@ -18,7 +18,7 @@ import LocationPickerModal from '../../../components/LocationPickerModal';
 import PrivacyPickerSheet from '../../../components/PrivacyPickerSheet';
 import MusicPickerModal from '../../../components/MusicPickerModal';
 import FriendPickerModal from '../../../components/FriendPickerModal';
-import { PostPrivacy, PrivacyLabels } from '../../../utils/postEnums';
+import { PostPrivacy, PrivacyLabels } from '../../../utils/constants/postEnums';
 import Avatar from '../../../components/Avatar';
 import EmojiPickerModal from '../../../components/EmojiPickerModal';
 import MenuControl from '../../../components/MenuControl';
@@ -30,13 +30,13 @@ export default function CreatePostScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedMusic, setSelectedMusic] = useState(null);
-  const [selectedFontStyle, setSelectedFontStyle] = useState('normal'); 
+  const [selectedFontStyle, setSelectedFontStyle] = useState('normal');
   const [selectedColor, setSelectedColor] = useState(null); // Text color state
   const [isScheduled, setIsScheduled] = useState(false);
   const [taggedFriends, setTaggedFriends] = useState([]);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const soundRef = useRef(null);
-  
+
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const user = useAuthStore(state => state.user);
@@ -71,14 +71,14 @@ export default function CreatePostScreen({ navigation }) {
 
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    
+
     const showSub = Keyboard.addListener(showEvent, (e) => {
       setKbHeight(e.endCoordinates.height);
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       setKbHeight(0);
     });
-    
+
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -91,7 +91,7 @@ export default function CreatePostScreen({ navigation }) {
       try {
         await soundRef.current.stopAsync();
         await soundRef.current.unloadAsync();
-      } catch (e) {}
+      } catch (e) { }
       soundRef.current = null;
       setIsMusicPlaying(false);
     }
@@ -107,7 +107,7 @@ export default function CreatePostScreen({ navigation }) {
         setIsMusicPlaying(true);
         sound.setOnPlaybackStatusUpdate((status) => { if (status.didJustFinish) setIsMusicPlaying(false); });
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const handleComingSoon = () => {
@@ -122,7 +122,7 @@ export default function CreatePostScreen({ navigation }) {
         const newImages = result.assets.slice(0, remainingSlots).map(asset => asset.uri);
         setImages(prev => [...prev, ...newImages]);
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const takePhoto = async () => {
@@ -131,7 +131,7 @@ export default function CreatePostScreen({ navigation }) {
       if (status !== 'granted') return;
       const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (!result.canceled && result.assets) setImages(prev => [...prev, result.assets[0].uri]);
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const removeImage = (index) => setImages(prev => prev.filter((_, i) => i !== index));
@@ -184,7 +184,7 @@ export default function CreatePostScreen({ navigation }) {
       active: selectedFontStyle === style.id,
       onPress: () => setSelectedFontStyle(style.id)
     })),
-    { label: '--- Màu sắc ---', onPress: () => {}, color: '#999', autoClose: false },
+    { label: '--- Màu sắc ---', onPress: () => { }, color: '#999', autoClose: false },
     ...COLOR_OPTIONS.map(opt => ({
       label: opt.label,
       icon: opt.icon,
@@ -231,10 +231,10 @@ export default function CreatePostScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <View style={s.headerRight}>
-            <TouchableOpacity 
+            <TouchableOpacity
               ref={fontBtnRef}
               collapsable={false}
-              style={[s.styleBtnBg, selectedFontStyle !== 'normal' && { backgroundColor: colors.accent }]} 
+              style={[s.styleBtnBg, selectedFontStyle !== 'normal' && { backgroundColor: colors.accent }]}
               onPress={() => setMenuVisible(true)}
             >
               <Text style={[s.styleBtnText, { color: '#fff' }]}>Aa</Text>
@@ -271,8 +271,8 @@ export default function CreatePostScreen({ navigation }) {
 
           <TextInput
             style={[
-              s.input, 
-              { 
+              s.input,
+              {
                 fontFamily: FONT_STYLES.find(f => f.id === selectedFontStyle)?.fontFamily || 'System',
                 fontWeight: FONT_STYLES.find(f => f.id === selectedFontStyle)?.fontWeight || 'normal',
                 fontStyle: FONT_STYLES.find(f => f.id === selectedFontStyle)?.fontStyle || 'normal',
@@ -332,8 +332,8 @@ export default function CreatePostScreen({ navigation }) {
           </View>
 
           <View style={s.toolbar}>
-            <TouchableOpacity 
-              style={s.toolbarBtn} 
+            <TouchableOpacity
+              style={s.toolbarBtn}
               onPress={() => emojiSheetRef.current?.present()}
             >
               <MaterialCommunityIcons name="emoticon-outline" size={26} color={colors.postAction} />
@@ -350,11 +350,11 @@ export default function CreatePostScreen({ navigation }) {
         <MusicPickerModal ref={musicSheetRef} onSelect={setSelectedMusic} />
         <FriendPickerModal ref={friendSheetRef} onSelect={setTaggedFriends} initialSelected={taggedFriends} />
         <EmojiPickerModal ref={emojiSheetRef} onSelect={handleEmojiSelect} />
-        <MenuControl 
-          visible={menuVisible} 
-          onClose={() => setMenuVisible(false)} 
-          items={menuItems} 
-          from={fontBtnRef} 
+        <MenuControl
+          visible={menuVisible}
+          onClose={() => setMenuVisible(false)}
+          items={menuItems}
+          from={fontBtnRef}
           isModal={true}
         />
 

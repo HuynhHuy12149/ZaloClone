@@ -1,16 +1,16 @@
 import React, { forwardRef, useImperativeHandle, useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, 
-  FlatList, Modal, Animated, Dimensions, 
+  View, Text, StyleSheet, TouchableOpacity,
+  FlatList, Modal, Animated, Dimensions,
   TouchableWithoutFeedback, Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const EMOJIS = [
-  '😂', '❤️', '😍', '👍', '🙏', '😭', '😘', '🔥', 
+  '😂', '❤️', '😍', '👍', '🙏', '😭', '😘', '🔥',
   '😊', '🥰', '✨', '🥺', '🎉', '👏', '🙌', '🤣',
   '😎', '🤔', '😢', '🤤', '🤩', '🥳', '🤯', '😴',
   '🙄', '😜', '😇', '🤠', '🤡', '👻', '👽', '👾',
@@ -33,8 +33,8 @@ const EMOJIS = [
 
 const EmojiItem = React.memo(({ item, onSelect }) => {
   return (
-    <TouchableOpacity 
-      style={s.emojiItem} 
+    <TouchableOpacity
+      style={s.emojiItem}
       onPress={() => onSelect(item)}
       activeOpacity={0.6}
     >
@@ -47,7 +47,7 @@ const EmojiPickerModal = forwardRef(({ onSelect }, ref) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
-  
+
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -90,11 +90,11 @@ const EmojiPickerModal = forwardRef(({ onSelect }, ref) => {
         <TouchableWithoutFeedback onPress={hide}>
           <Animated.View style={[s.backdrop, { opacity: backdropOpacity }]} />
         </TouchableWithoutFeedback>
-        
-        <Animated.View 
+
+        <Animated.View
           style={[
-            s.sheet, 
-            { 
+            s.sheet,
+            {
               backgroundColor: colors.bgCard,
               transform: [{ translateY: sheetTranslateY }],
               paddingBottom: insets.bottom + 20
@@ -108,7 +108,7 @@ const EmojiPickerModal = forwardRef(({ onSelect }, ref) => {
               <Text style={{ color: colors.accent, fontWeight: '600' }}>Đóng</Text>
             </TouchableOpacity>
           </View>
-          
+
           <FlatList
             data={EMOJIS}
             keyExtractor={(item, index) => index.toString()}

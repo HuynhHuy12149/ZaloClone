@@ -1,6 +1,6 @@
 import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
-import { ServerEndpoint } from '../../constants/ServerEndpoint';
+import { ServerEndpoint } from '../../utils/constants/ServerEndpoint';
 
 // Lấy danh sách bài viết (kèm thông tin tác giả, đếm like/comment)
 export const getPosts = async () => {
@@ -33,7 +33,7 @@ export const getPosts = async () => {
     allReactions?.forEach(r => {
       if (!reactionMap[r.post_id]) reactionMap[r.post_id] = new Set();
       reactionMap[r.post_id].add(r.type);
-      
+
       if (user && r.user_id === user.id) {
         userReactionMap[r.post_id] = r.type;
       }
@@ -126,8 +126,8 @@ export const handleReaction = async (postId, type = 'heart') => {
         user_id: user.id,
         type: type,
         updated_at: new Date().toISOString()
-      }, { 
-        onConflict: 'post_id, user_id' 
+      }, {
+        onConflict: 'post_id, user_id'
       })
   );
 };

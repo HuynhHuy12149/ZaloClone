@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MenuControl from '../../../../../components/MenuControl';
-import { REACTIONS } from '../../../../../utils/postEnums';
+import { REACTIONS } from '../../../../../utils/constants/postEnums';
 import { handleReaction } from '../../../../../services/supabaseService/postService';
 
 export default function PostActions({ item, colors, onReactionUpdate }) {
@@ -21,7 +21,7 @@ export default function PostActions({ item, colors, onReactionUpdate }) {
     const newLikedState = !localLiked;
     // Nếu like mới thì mặc định là heart, nếu bỏ like thì gửi type hiện tại để DB xóa đúng dòng đó
     const type = newLikedState ? 'heart' : reactionType;
-    
+
     const oldLiked = localLiked;
     const oldType = reactionType;
 
@@ -71,12 +71,12 @@ export default function PostActions({ item, colors, onReactionUpdate }) {
           onPress: () => onSelectReaction(r.id)
         }))}
       />
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         ref={likeBtnRef}
         collapsable={false}
-        style={styles.actionBtn} 
-        activeOpacity={0.6} 
+        style={styles.actionBtn}
+        activeOpacity={0.6}
         onPress={handleLike}
         onLongPress={() => setShowPicker(true)}
       >

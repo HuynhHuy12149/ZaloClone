@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 /* ── Icon map ── */
 const TAB_CONFIG = {
@@ -114,35 +114,35 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
           },
         ]}
       >
-      {state.routes.map((route, index) => {
-        const isFocused = state.index === index;
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index;
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-        const onLongPress = () => {
-          navigation.emit({ type: 'tabLongPress', target: route.key });
-        };
+          const onLongPress = () => {
+            navigation.emit({ type: 'tabLongPress', target: route.key });
+          };
 
-        return (
-          <TabItem
-            key={route.key}
-            route={route}
-            isFocused={isFocused}
-            colors={colors}
-            onPress={onPress}
-            onLongPress={onLongPress}
-          />
-        );
-      })}
+          return (
+            <TabItem
+              key={route.key}
+              route={route}
+              isFocused={isFocused}
+              colors={colors}
+              onPress={onPress}
+              onLongPress={onLongPress}
+            />
+          );
+        })}
       </View>
     </View>
   );

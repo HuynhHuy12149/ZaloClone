@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet, Dimensions } from 'react-native';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * AnimatedTabBar — sub-tab used inside screen content

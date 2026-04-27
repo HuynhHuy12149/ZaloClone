@@ -1,6 +1,6 @@
 import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
-import { ServerEndpoint } from '../../constants/ServerEndpoint';
+import { ServerEndpoint } from '../../utils/constants/ServerEndpoint';
 
 export const login = async (email, password) => {
   return await supabaseProxy(supabase.auth.signInWithPassword({ email, password }));

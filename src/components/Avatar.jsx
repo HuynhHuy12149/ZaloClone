@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Avatar Component
@@ -63,10 +63,10 @@ export default function Avatar({
   };
 
   const Container = onPress ? TouchableOpacity : View;
-  
+
   return (
-    <Container 
-      onPress={onPress} 
+    <Container
+      onPress={onPress}
       activeOpacity={0.8}
       style={[
         { width: size, height: size, borderRadius },

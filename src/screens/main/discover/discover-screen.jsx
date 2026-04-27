@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import Avatar from '../../../components/Avatar';
 
 const ITEMS = [
@@ -90,7 +90,7 @@ export default function DiscoverScreen() {
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
   scrollContent: { paddingBottom: 110 },
-  
+
   banner: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   bannerCard: {
     flexDirection: 'row', alignItems: 'center',
@@ -98,15 +98,15 @@ const styles = (c) => StyleSheet.create({
     borderRadius: 24,
   },
   bannerText: { fontSize: 14, fontWeight: '600', marginLeft: 8 },
-  
+
   sectionWrap: {
     marginTop: 8,
   },
   sectionLabel: { paddingHorizontal: 24, paddingVertical: 8 },
   sectionTitle: { fontSize: 13, fontWeight: '800', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  
-  card: { 
-    backgroundColor: c.bgCard, 
+
+  card: {
+    backgroundColor: c.bgCard,
     borderRadius: 24,
     marginHorizontal: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,

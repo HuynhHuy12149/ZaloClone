@@ -10,7 +10,7 @@ import { getPosts, toggleLike } from '../../../services/supabaseService/postServ
 import { supabase } from '../../../libs/supabase';
 import ZaloHeader from '../../../components/ZaloHeader';
 import AnimatedTabBar from '../../../components/AnimatedTabBar';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { useAuthStore } from '../../../store/authStore';
 import PostItem from './components/diary/PostItem';
 import ImagePreviewModal from './components/diary/ImagePreviewModal';
@@ -72,11 +72,11 @@ export default function HomeScreen({ navigation }) {
         onPress={() => navigation.navigate('CreatePost')}
         activeOpacity={0.8}
       >
-        <Avatar 
-          url={user?.avatar_url} 
-          name={user?.full_name} 
-          size={44} 
-          rounded={false} 
+        <Avatar
+          url={user?.avatar_url}
+          name={user?.full_name}
+          size={44}
+          rounded={false}
         />
         <View style={s.composerTextWrap}>
           <Text style={s.composerPlaceholder}>Hôm nay bạn thế nào?</Text>
@@ -137,7 +137,7 @@ export default function HomeScreen({ navigation }) {
           { component: <Ionicons name="notifications-outline" size={24} color={colors.iconAction} /> },
         ]}
       />
-      
+
       {/* Sub-tabs pinned at the top */}
       <AnimatedTabBar
         tabs={['Nhật Ký', 'Zalo Video']}
@@ -208,10 +208,10 @@ const styles = (c) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 16,
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 6 }, 
-    shadowOpacity: 0.04, 
-    shadowRadius: 16, 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
     elevation: 1,
   },
   composerAvatar: { width: 44, height: 44, borderRadius: 16 }, // Squircle
@@ -223,10 +223,10 @@ const styles = (c) => StyleSheet.create({
   },
 
   // Stories
-  storiesSection: { 
-    backgroundColor: c.bgCard, 
+  storiesSection: {
+    backgroundColor: c.bgCard,
     borderRadius: 32, // Tăng lên 32px
-    paddingVertical: 18, 
+    paddingVertical: 18,
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 1,
   },
   storiesScroll: { paddingHorizontal: 16, gap: 16 },

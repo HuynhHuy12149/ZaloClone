@@ -1,4 +1,4 @@
-import { ServerEndpoint } from '../../constants/ServerEndpoint';
+import { ServerEndpoint } from '../../utils/constants/ServerEndpoint';
 import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
 

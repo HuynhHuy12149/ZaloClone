@@ -1,14 +1,14 @@
 import React, { useState, forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, Modal, TouchableWithoutFeedback, 
+  StyleSheet, Modal, TouchableWithoutFeedback,
   TextInput, FlatList, Animated, Dimensions, Image,
   ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import axios from 'axios';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -16,7 +16,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  
+
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +59,7 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
       try {
         await soundRef.current.stopAsync();
         await soundRef.current.unloadAsync();
-      } catch (e) {}
+      } catch (e) { }
       soundRef.current = null;
       setPlayingId(null);
     }
@@ -135,20 +135,20 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
         <Text style={[styles.songTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
         <Text style={[styles.songArtist, { color: colors.textMuted }]}>{item.artist}</Text>
       </View>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => playPreview(item.preview, item.id)}
           style={[styles.playBtn, { backgroundColor: colors.bgInput }]}
         >
-          <Ionicons 
-            name={playingId === item.id ? "pause" : "play"} 
-            size={18} 
-            color={colors.accent} 
+          <Ionicons
+            name={playingId === item.id ? "pause" : "play"}
+            size={18}
+            color={colors.accent}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             onSelect(item);
             hide();
@@ -162,10 +162,10 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
   );
 
   return (
-    <Modal 
-      visible={visible} 
-      transparent 
-      animationType="none" 
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
       onRequestClose={hide}
       statusBarTranslucent={true}
     >
@@ -174,7 +174,7 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
           <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, backgroundColor: 'rgba(0,0,0,0.5)' }]} />
         </TouchableWithoutFeedback>
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.sheetWrap,
             { transform: [{ translateY: sheetTranslateY }] }
@@ -186,7 +186,7 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            
+
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>Tìm nhạc</Text>
               <TouchableOpacity onPress={hide} style={styles.closeBtn}>
@@ -234,17 +234,17 @@ const styles = StyleSheet.create({
   sheetWrap: { width: '100%' },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingTop: 12 },
   handle: { width: 40, height: 5, borderRadius: 2.5, alignSelf: 'center', marginBottom: 12 },
-  header: { 
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', 
-    paddingHorizontal: 20, marginBottom: 15, position: 'relative' 
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 20, marginBottom: 15, position: 'relative'
   },
   title: { fontSize: 18, fontWeight: '800' },
   closeBtn: { position: 'absolute', right: 20 },
   searchWrap: { paddingHorizontal: 16, marginBottom: 15 },
   searchBar: { flexDirection: 'row', alignItems: 'center', borderRadius: 22, height: 44 },
   input: { flex: 1, paddingHorizontal: 10, fontSize: 15 },
-  songItem: { 
-    flexDirection: 'row', alignItems: 'center', 
+  songItem: {
+    flexDirection: 'row', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: 1,
   },
   cover: { width: 52, height: 52, borderRadius: 10, marginRight: 12 },
@@ -252,13 +252,13 @@ const styles = StyleSheet.create({
   songTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   songArtist: { fontSize: 13 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  playBtn: { 
-    width: 36, height: 36, borderRadius: 18, 
-    alignItems: 'center', justifyContent: 'center' 
+  playBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center'
   },
-  selectBtn: { 
-    paddingHorizontal: 14, paddingVertical: 8, 
-    borderRadius: 18, minWidth: 60, alignItems: 'center' 
+  selectBtn: {
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 18, minWidth: 60, alignItems: 'center'
   },
   selectBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   emptyWrap: { alignItems: 'center', marginTop: 100 },

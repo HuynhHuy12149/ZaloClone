@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import Avatar from './Avatar';
 import { useAuthStore } from '../store/authStore';
 
@@ -29,10 +29,10 @@ export default function ZaloHeader({
       <View style={s.inner}>
         {!title && (
           <TouchableOpacity style={s.headerAvatar} activeOpacity={0.7}>
-            <Avatar 
-              url={user?.avatar_url} 
-              name={user?.full_name} 
-              size={36} 
+            <Avatar
+              url={user?.avatar_url}
+              name={user?.full_name}
+              size={36}
             />
           </TouchableOpacity>
         )}

@@ -7,7 +7,7 @@ import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/ve
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { useAuthStore } from '../../../store/authStore';
 import { logout as supabaseLogout, updateProfileAvatar } from '../../../services/supabaseService/authService';
 import Avatar from '../../../components/Avatar';
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
     <View style={s.container}>
       {/* Header */}
       <View style={[s.header, { paddingTop: insets.top + 16 }]}>
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Avatar url={user?.avatar_url} name={user?.full_name} size={36} />
           <Text style={s.headerTitle}>Hồ sơ</Text>
         </View>
@@ -140,7 +140,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
-        
+
         {/* Profile Info - Center Aligned */}
         <View style={s.profileHeader}>
           <TouchableOpacity style={s.avatarWrap} onPress={pickAndUploadImage} disabled={isUploading} activeOpacity={0.8}>
@@ -151,18 +151,18 @@ export default function ProfileScreen() {
               </View>
             )}
             <View style={[s.editBadge, { backgroundColor: colors.accent }]}>
-               <Ionicons name="camera" size={14} color="#fff" />
+              <Ionicons name="camera" size={14} color="#fff" />
             </View>
           </TouchableOpacity>
           <Text style={s.profileName}>{user?.fullName || 'Người dùng Zalo'}</Text>
           <Text style={s.profileSub}>@{user?.username || 'username'}</Text>
-          
+
           <View style={s.profileActionsRow}>
             <TouchableOpacity style={[s.pillBtn, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
               <Text style={s.pillBtnText}>Cập nhật giới thiệu</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[s.iconBtn, { backgroundColor: colors.bgCard }]} activeOpacity={0.8}>
-               <Ionicons name="qr-code" size={20} color={colors.text} />
+              <Ionicons name="qr-code" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
         }}>
           <Text style={s.logoutText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
-        
+
       </ScrollView>
     </View>
   );
@@ -251,16 +251,16 @@ function ProfileItem({ item, colors, isLast }) {
 }
 
 const styles = (c) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: c.bg }, 
+  container: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 24, paddingBottom: 16,
     backgroundColor: c.bg,
   },
   headerTitle: { fontSize: 28, fontWeight: '800', color: c.text, letterSpacing: -0.5 },
-  settingsBtn: { 
-    width: 44, height: 44, borderRadius: 22, 
-    backgroundColor: c.bgCard, 
+  settingsBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: c.bgCard,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 0
   },
@@ -272,7 +272,7 @@ const styles = (c) => StyleSheet.create({
     marginTop: 10,
     marginBottom: 24,
   },
-  avatarWrap: { 
+  avatarWrap: {
     marginBottom: 16,
     borderRadius: 40,
     backgroundColor: c.bgInput,
@@ -293,7 +293,7 @@ const styles = (c) => StyleSheet.create({
   },
   profileName: { fontSize: 24, fontWeight: '800', color: c.text, marginBottom: 4 },
   profileSub: { fontSize: 15, fontWeight: '500', color: c.textSub, marginBottom: 20 },
-  
+
   profileActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pillBtn: {
     paddingHorizontal: 24, paddingVertical: 12,

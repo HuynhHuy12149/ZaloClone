@@ -1,6 +1,6 @@
 import { supabase } from '../../libs/supabase';
 import { supabaseProxy } from '../config/Proxy';
-import { ServerEndpoint } from '../../constants/ServerEndpoint';
+import { ServerEndpoint } from '../../utils/constants/ServerEndpoint';
 
 
 export const getAllProfiles = async () => {
@@ -54,15 +54,15 @@ export const getLatestMessagesForUser = async (userId) => {
   const { data: userGroups } = await supabaseProxy(
     supabase.from('group_members').select('group_id').eq('user_id', userId)
   );
-  
+
   const groupIds = userGroups ? userGroups.map(g => g.group_id) : [];
-  
+
   let query = supabase
     .from('messages')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(500);
-    
+
   if (groupIds.length > 0) {
     query = query.or(`conversation_id.ilike.%${userId}%,conversation_id.in.(${groupIds.join(',')})`);
   } else {

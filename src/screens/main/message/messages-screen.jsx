@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import ZaloHeader from "../../../components/ZaloHeader";
-import { useTheme } from "../../../utils/ThemeContext";
+import Avatar from "../../../components/Avatar";
+import { useTheme } from "../../../context/ThemeContext";
 import {
   getAllProfiles,
   getLatestMessagesForUser,
@@ -92,7 +93,7 @@ export default function MessagesScreen({ navigation }) {
             isGroup: true,
             id: g.id,
             full_name: g.name,
-            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(g.name)}&background=random`,
+            avatar_url: g.avatar_url || null,
           })),
         ];
 
@@ -169,7 +170,7 @@ export default function MessagesScreen({ navigation }) {
                           isGroup: true,
                           id: data.id,
                           full_name: data.name,
-                          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`,
+                          avatar_url: data.avatar_url || null,
                         },
                         ...curr,
                       ]);
@@ -277,7 +278,7 @@ export default function MessagesScreen({ navigation }) {
           isGroup: true,
           id: newGroup.id,
           full_name: newGroup.name,
-          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(newGroup.name)}&background=random`,
+          avatar_url: newGroup.avatar_url || null,
         },
         ...prev,
       ]);
@@ -315,13 +316,11 @@ export default function MessagesScreen({ navigation }) {
       >
         {/* Avatar */}
         <View style={s.avatarContainer}>
-          <Image
-            source={{
-              uri:
-                item.avatar_url ||
-                `https://ui-avatars.com/api/?name=${item.full_name || item.username}&background=random`,
-            }}
-            style={s.avatar}
+          <Avatar
+            url={item.avatar_url}
+            name={item.full_name || item.username}
+            size={56}
+            rounded={false}
           />
           {/* Online dot */}
           <View style={s.onlineDot} />
@@ -428,21 +427,18 @@ export default function MessagesScreen({ navigation }) {
                 (u) => u.id === notification.targetId,
               );
 
-              const avatarUrl = notification.isGroup
-                ? targetChat?.avatar_url ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(targetChat?.full_name || targetChat?.username || "Group")}&background=random`
-                : senderUser?.avatar_url ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(senderUser?.full_name || senderUser?.username || "U")}&background=random`;
-
               const title = notification.isGroup
                 ? `${senderUser?.full_name || senderUser?.username || "Ai đó"} trong ${targetChat?.full_name || targetChat?.username || "Nhóm"}`
                 : senderUser?.full_name || senderUser?.username || "Tin nhắn mới";
 
               return (
                 <>
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={s.notificationAvatar}
+                  <Avatar
+                    url={notification.isGroup ? targetChat?.avatar_url : senderUser?.avatar_url}
+                    name={notification.isGroup ? (targetChat?.full_name || targetChat?.username || "Group") : (senderUser?.full_name || senderUser?.username || "U")}
+                    size={44}
+                    rounded={!notification.isGroup}
+                    style={{ marginRight: 12 }}
                   />
                   <View style={{ flex: 1 }}>
                     <Text style={s.notificationTitle} numberOfLines={1}>
@@ -542,13 +538,11 @@ export default function MessagesScreen({ navigation }) {
                         : colors.border
                     }
                   />
-                  <Image
-                    source={{
-                      uri:
-                        f.avatar_url ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(f.full_name || f.username)}&background=random`,
-                    }}
-                    style={s.friendAvatar}
+                  <Avatar
+                    url={f.avatar_url}
+                    name={f.full_name || f.username}
+                    size={36}
+                    style={{ marginHorizontal: 12 }}
                   />
                   <Text style={s.friendName}>{f.full_name || f.username}</Text>
                 </TouchableOpacity>

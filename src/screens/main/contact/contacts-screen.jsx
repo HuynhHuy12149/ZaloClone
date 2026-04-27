@@ -6,7 +6,7 @@ import {
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
 import AnimatedTabBar from '../../../components/AnimatedTabBar';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import Avatar from '../../../components/Avatar';
 
 if (Platform.OS === 'android') {

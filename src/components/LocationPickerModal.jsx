@@ -8,7 +8,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import axios from 'axios';
-import { useTheme } from '../utils/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -17,7 +17,7 @@ const GOONG_API_KEY = process.env.EXPO_PUBLIC_GOONG_MAP;
 const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  
+
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [locations, setLocations] = useState([]);
@@ -101,7 +101,7 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
       const res = await axios.get(`https://rsapi.goong.io/Place/Autocomplete`, {
         params: {
           api_key: GOONG_API_KEY,
-          input: ' ', 
+          input: ' ',
           location: `${coords.latitude},${coords.longitude}`,
           limit: 10,
           radius: 1000
@@ -149,7 +149,7 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
           place_id: place.place_id
         }
       });
-      
+
       const details = res.data.result;
       const lat = details.geometry.location.lat;
       const lng = details.geometry.location.lng;
@@ -177,8 +177,8 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[styles.item, { borderBottomColor: colors.border + '30' }]} 
+    <TouchableOpacity
+      style={[styles.item, { borderBottomColor: colors.border + '30' }]}
       onPress={() => handleSelect(item)}
     >
       <View style={[styles.iconWrap, { backgroundColor: colors.bgInput }]}>
@@ -205,29 +205,29 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
     >
       <View style={styles.container}>
         <TouchableWithoutFeedback onPress={hide}>
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.backdrop, 
-              { 
+              styles.backdrop,
+              {
                 opacity: backdropOpacity,
-                backgroundColor: 'rgba(0,0,0,0.5)' 
+                backgroundColor: 'rgba(0,0,0,0.5)'
               }
-            ]} 
+            ]}
           />
         </TouchableWithoutFeedback>
-        
-        <Animated.View 
+
+        <Animated.View
           style={[
             styles.sheetWrap,
             { transform: [{ translateY: sheetTranslateY }] }
           ]}
         >
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={[styles.sheet, { backgroundColor: colors.bgCard, height: SCREEN_HEIGHT * 0.85 }]}
           >
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            
+
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>Địa điểm</Text>
             </View>
@@ -258,9 +258,9 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
               data={locations}
               keyExtractor={(item) => item.place_id}
               renderItem={renderItem}
-              contentContainerStyle={{ 
-                paddingHorizontal: 16, 
-                paddingBottom: insets.bottom + 40 
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingBottom: insets.bottom + 40
               }}
               keyboardShouldPersistTaps="handled"
               ListHeaderComponent={
@@ -315,9 +315,9 @@ const styles = StyleSheet.create({
     borderRadius: 22, height: 44,
   },
   input: { flex: 1, paddingHorizontal: 10, fontSize: 15 },
-  sectionHeader: { 
+  sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 10, marginTop: 5 
+    paddingVertical: 10, marginTop: 5
   },
   sectionTitle: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase' },
   item: {

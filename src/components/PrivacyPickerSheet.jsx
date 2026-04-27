@@ -5,15 +5,15 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../utils/ThemeContext';
-import { PrivacyOptions } from '../utils/postEnums';
+import { useTheme } from '../context/ThemeContext';
+import { PrivacyOptions } from '../utils/constants/postEnums';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
   const { colors } = useTheme();
   const [visible, setVisible] = useState(false);
-  
+
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -65,34 +65,34 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
     >
       <View style={styles.container}>
         <TouchableWithoutFeedback onPress={hide}>
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.backdrop, 
-              { 
+              styles.backdrop,
+              {
                 opacity: backdropOpacity,
-                backgroundColor: 'rgba(0,0,0,0.5)' 
+                backgroundColor: 'rgba(0,0,0,0.5)'
               }
-            ]} 
+            ]}
           />
         </TouchableWithoutFeedback>
 
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.sheet, 
-            { 
+            styles.sheet,
+            {
               backgroundColor: colors.bgCard,
               transform: [{ translateY: sheetTranslateY }]
             }
           ]}
         >
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          
+
           <Text style={[styles.title, { color: colors.text }]}>Ai có thể xem bài viết này?</Text>
-          
+
           <View style={styles.optionsWrap}>
             {PrivacyOptions.map((opt) => (
-              <TouchableOpacity 
-                key={opt.value} 
+              <TouchableOpacity
+                key={opt.value}
                 style={styles.optionItem}
                 onPress={() => {
                   onSelect(opt.value);
@@ -106,7 +106,7 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
                   <Text style={[styles.label, { color: colors.text }]}>{opt.label}</Text>
                   <Text style={[styles.desc, { color: colors.textMuted }]}>{opt.desc}</Text>
                 </View>
-                
+
                 <View style={styles.radioOuter}>
                   {selectedValue === opt.value ? (
                     <Ionicons name="checkmark-circle" size={24} color={colors.accent} />
@@ -117,7 +117,7 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           <View style={{ height: 40 }} />
         </Animated.View>
       </View>
@@ -148,21 +148,21 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 25 },
   optionsWrap: { gap: 10 },
-  optionItem: { 
-    flexDirection: 'row', alignItems: 'center', gap: 14, 
-    paddingVertical: 12 
+  optionItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingVertical: 12
   },
-  iconWrap: { 
-    width: 44, height: 44, borderRadius: 22, 
-    alignItems: 'center', justifyContent: 'center' 
+  iconWrap: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center'
   },
   meta: { flex: 1 },
   label: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
   desc: { fontSize: 13 },
   radioOuter: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  radioInner: { 
-    width: 20, height: 20, borderRadius: 10, 
-    borderWidth: 1.5, 
+  radioInner: {
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 1.5,
   }
 });
 

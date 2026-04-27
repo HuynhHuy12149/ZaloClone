@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Styl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { login, getProfile } from '../../../services/supabaseService/authService';
 import { useAuthStore } from '../../../store/authStore';
-import { useTheme } from '../../../utils/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {

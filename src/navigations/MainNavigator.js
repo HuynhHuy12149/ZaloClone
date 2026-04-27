@@ -8,7 +8,7 @@ import { LoginScreen } from "../screens/auths/login";
 import { RegisterScreen } from "../screens/auths/register";
 import { Routers } from "../router/Router";
 import TabsNavigator from "./TabsNavigator";
-import { ThemeProvider, useTheme } from "../utils/ThemeContext";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -43,13 +43,13 @@ function AppNavigator() {
                 options={
                   route.isModal
                     ? {
-                        presentation: 'modal',
-                        animation: 'slide_from_bottom',
-                        headerShown: false,
-                      }
+                      presentation: 'modal',
+                      animation: 'slide_from_bottom',
+                      headerShown: false,
+                    }
                     : {
-                        headerShown: false,
-                      }
+                      headerShown: false,
+                    }
                 }
               />
             ))}
