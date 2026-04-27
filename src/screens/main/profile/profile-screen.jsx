@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Entypo, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../utils/ThemeContext';
 import { useAuthStore } from '../../../store/authStore';
 import { logout as supabaseLogout, updateProfileAvatar } from '../../../services/supabaseService/authService';
+import Avatar from '../../../components/Avatar';
 
 const { width } = Dimensions.get('window');
 
@@ -35,11 +37,13 @@ const SECTION3 = [
 
 export default function ProfileScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
-  const { user, logOut, updateUserAvatar } = useAuthStore();
+  const user = useAuthStore(state => state.user);
+  const logOut = useAuthStore(state => state.logOut);
+  const updateUserAvatar = useAuthStore(state => state.updateUserAvatar);
   const insets = useSafeAreaInsets();
   const s = styles(colors);
 
-  const [avatarUri, setAvatarUri] = useState(user?.profilePic || 'https://i.pravatar.cc/150?u=me');
+  const [avatarUri, setAvatarUri] = useState(user?.profilePic);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleLogout = async () => {
@@ -92,9 +96,6 @@ export default function ProfileScreen() {
       const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',
         body: data,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
       });
 
       const result = await response.json();
@@ -129,7 +130,10 @@ export default function ProfileScreen() {
     <View style={s.container}>
       {/* Header */}
       <View style={[s.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={s.headerTitle}>Hồ sơ</Text>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+          <Avatar url={user?.avatar_url} name={user?.full_name} size={36} />
+          <Text style={s.headerTitle}>Hồ sơ</Text>
+        </View>
         <TouchableOpacity style={s.settingsBtn}>
           <Ionicons name="settings-outline" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -140,7 +144,7 @@ export default function ProfileScreen() {
         {/* Profile Info - Center Aligned */}
         <View style={s.profileHeader}>
           <TouchableOpacity style={s.avatarWrap} onPress={pickAndUploadImage} disabled={isUploading} activeOpacity={0.8}>
-            <Image source={{ uri: avatarUri }} style={s.avatar} />
+            <Avatar url={avatarUri} name={user?.fullName || user?.full_name} size={110} rounded={false} />
             {isUploading && (
               <View style={[StyleSheet.absoluteFill, s.avatarOverlay]}>
                 <ActivityIndicator color="#ffffff" size="large" />

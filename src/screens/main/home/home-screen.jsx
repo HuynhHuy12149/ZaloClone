@@ -2,14 +2,19 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, RefreshControl, ActivityIndicator,
   Image, TouchableOpacity, ScrollView, StyleSheet, Dimensions,
-  LayoutAnimation, Platform, UIManager
+  LayoutAnimation, Platform, UIManager, Modal, Pressable
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getPosts } from '../../../services/supabaseService/postService';
+import { getPosts, toggleLike } from '../../../services/supabaseService/postService';
 import { supabase } from '../../../libs/supabase';
 import ZaloHeader from '../../../components/ZaloHeader';
 import AnimatedTabBar from '../../../components/AnimatedTabBar';
 import { useTheme } from '../../../utils/ThemeContext';
+import { useAuthStore } from '../../../store/authStore';
+import PostItem from './components/diary/PostItem';
+import ImagePreviewModal from './components/diary/ImagePreviewModal';
+import Avatar from '../../../components/Avatar';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -32,7 +37,9 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [previewData, setPreviewData] = useState({ visible: false, images: [], index: 0, post: null });
   const { colors } = useTheme();
+  const user = useAuthStore(state => state.user);
   const s = styles(colors);
 
   const fetchPosts = async () => {
@@ -65,13 +72,17 @@ export default function HomeScreen({ navigation }) {
         onPress={() => navigation.navigate('CreatePost')}
         activeOpacity={0.8}
       >
-        <Image source={{ uri: 'https://i.pravatar.cc/100' }} style={s.composerAvatar} />
-        <Text style={s.composerPlaceholder}>Hôm nay bạn thế nào?</Text>
-        <View style={s.composerDivider} />
-        <View style={s.composerActions}>
-          <View style={s.composerBtnWrap}>
-            <Ionicons name="image" size={20} color="#4caf50" />
-          </View>
+        <Avatar 
+          url={user?.avatar_url} 
+          name={user?.full_name} 
+          size={44} 
+          rounded={false} 
+        />
+        <View style={s.composerTextWrap}>
+          <Text style={s.composerPlaceholder}>Hôm nay bạn thế nào?</Text>
+        </View>
+        <View style={[s.composerBtnWrap, { backgroundColor: colors.accent + '15' }]}>
+          <Ionicons name="image" size={20} color={colors.accent} />
         </View>
       </TouchableOpacity>
 
@@ -88,10 +99,10 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   </View>
                 ) : (
-                  <Image source={{ uri: `https://i.pravatar.cc/150?u=${story.id}` }} style={s.storyImg} />
+                  <Avatar url={null} name={story.label} size={54} rounded={false} />
                 )}
               </View>
-              <Text style={s.storyLabel} numberOfLines={1}>{story.label}</Text>
+              <Text style={[s.storyLabel, { color: colors.text }]} numberOfLines={1}>{story.label}</Text>
             </View>
           ))}
         </ScrollView>
@@ -99,69 +110,23 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
+  const handleLike = async (postId) => {
+    await toggleLike(postId);
+    // Tùy chọn: Refresh dữ liệu để cập nhật số lượng thực tế từ server
+    // fetchPosts(); 
+  };
+
+  const openPreview = (post, index) => {
+    setPreviewData({
+      visible: true,
+      images: post?.media_urls || [],
+      index: index,
+      post: post
+    });
+  };
+
   const renderItem = ({ item }) => (
-    <View style={s.postCard}>
-      {/* Post header */}
-      <View style={s.postHeader}>
-        <Image
-          source={{ uri: item.profiles?.avatar_url || `https://i.pravatar.cc/100?u=${item.id}` }}
-          style={s.postAvatar}
-        />
-        <View style={s.postMeta}>
-          <Text style={s.postAuthor}>{item.profiles?.full_name || 'Người dùng'}</Text>
-          <View style={s.postTimeRow}>
-            <Text style={s.postTime}>{new Date(item.created_at).getHours()} giờ trước</Text>
-            <Ionicons name="earth" size={11} color={colors.textMuted} style={{ marginLeft: 4 }} />
-          </View>
-        </View>
-        <TouchableOpacity style={s.moreBtn}>
-          <MaterialCommunityIcons name="dots-horizontal" size={22} color={colors.textMuted} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <Text style={s.postContent}>{item.content}</Text>
-
-      {/* Media */}
-      {item.media_urls && item.media_urls.length > 0 && (
-        <View style={s.postMediaWrap}>
-          <Image
-            source={{ uri: item.media_urls[0] }}
-            style={s.postMedia}
-            resizeMode="cover"
-          />
-        </View>
-      )}
-
-      {/* Stats */}
-      <View style={s.statsRow}>
-        <View style={s.reactRow}>
-          <View style={s.emojiWrap}><Text style={s.reactEmoji}>❤️</Text></View>
-          <View style={[s.emojiWrap, { marginLeft: -8 }]}><Text style={s.reactEmoji}>😂</Text></View>
-          <Text style={s.statsText}>24</Text>
-        </View>
-        <Text style={s.statsText}>5 bình luận</Text>
-      </View>
-
-      {/* Divider */}
-      <View style={s.actionsDivider} />
-
-      {/* Action buttons */}
-      <View style={s.actionsRow}>
-        <TouchableOpacity style={s.actionItem} activeOpacity={0.7}>
-          <Ionicons name="heart-outline" size={22} color={colors.postAction} />
-          <Text style={s.actionText}>Thích</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.actionItem} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="comment-outline" size={22} color={colors.postAction} />
-          <Text style={s.actionText}>Bình luận</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.actionItem} activeOpacity={0.7}>
-          <Ionicons name="arrow-redo-outline" size={22} color={colors.postAction} />
-          <Text style={s.actionText}>Chia sẻ</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <PostItem item={item} colors={colors} onOpenPreview={openPreview} onLike={handleLike} />
   );
 
   return (
@@ -193,9 +158,11 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={s.listContent}
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <MaterialCommunityIcons name="post-outline" size={48} color={colors.iconSub} />
-              <Text style={s.emptyText}>Chưa có bài viết nào</Text>
-              <Text style={s.emptySub}>Hãy là người đăng bài đầu tiên 🚀</Text>
+              <View style={[s.emptyIconCircle, { backgroundColor: colors.bgInput }]}>
+                <MaterialCommunityIcons name="post-outline" size={32} color={colors.textMuted} />
+              </View>
+              <Text style={[s.emptyText, { color: colors.text }]}>Chưa có bài viết nào</Text>
+              <Text style={[s.emptySub, { color: colors.textMuted }]}>Hãy là người đăng bài đầu tiên 🚀</Text>
             </View>
           }
           refreshControl={
@@ -211,10 +178,17 @@ export default function HomeScreen({ navigation }) {
       ) : (
         <View style={s.emptyBox}>
           <MaterialCommunityIcons name="play-circle-outline" size={64} color={colors.iconSub} />
-          <Text style={s.emptyText}>Zalo Video</Text>
-          <Text style={s.emptySub}>Khám phá video ngắn thú vị</Text>
+          <Text style={[s.emptyText, { color: colors.text }]}>Zalo Video</Text>
+          <Text style={[s.emptySub, { color: colors.textMuted }]}>Khám phá video ngắn thú vị</Text>
         </View>
       )}
+
+      <ImagePreviewModal
+        visible={previewData.visible}
+        data={previewData}
+        colors={colors}
+        onClose={() => setPreviewData(prev => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }
@@ -222,92 +196,58 @@ export default function HomeScreen({ navigation }) {
 const styles = (c) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.bg },
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  listContent: { paddingBottom: 100, paddingTop: 16 },
-  headerContainer: { paddingHorizontal: 16, marginBottom: 16 },
+  listContent: { paddingBottom: 100, paddingTop: 12 },
+  headerContainer: { paddingHorizontal: 12, marginBottom: 16, marginTop: 12 },
 
-  // Composer
+  // Composer (Thanh đăng bài)
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: c.bgCard,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 32, // Tăng lên 32px
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 0,
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 6 }, 
+    shadowOpacity: 0.04, 
+    shadowRadius: 16, 
+    elevation: 1,
   },
-  composerAvatar: { width: 44, height: 44, borderRadius: 22 },
-  composerPlaceholder: { flex: 1, marginLeft: 12, fontSize: 16, color: c.textPlaceholder, fontWeight: '500' },
-  composerDivider: { width: 1, height: 24, backgroundColor: c.border + '60', marginHorizontal: 12 },
-  composerActions: { flexDirection: 'row', gap: 8 },
+  composerAvatar: { width: 44, height: 44, borderRadius: 16 }, // Squircle
+  composerTextWrap: { flex: 1, marginLeft: 12 },
+  composerPlaceholder: { fontSize: 15, color: c.textPlaceholder, fontWeight: '600' },
   composerBtnWrap: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: c.bgInput,
+    width: 40, height: 40, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center'
   },
 
   // Stories
   storiesSection: { 
     backgroundColor: c.bgCard, 
-    borderRadius: 24, 
-    paddingVertical: 16, 
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 16, elevation: 0,
+    borderRadius: 32, // Tăng lên 32px
+    paddingVertical: 18, 
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 1,
   },
-  storiesScroll: { paddingHorizontal: 16, gap: 14 },
-  storyWrap: { alignItems: 'center', width: 68 },
+  storiesScroll: { paddingHorizontal: 16, gap: 16 },
+  storyWrap: { alignItems: 'center', width: 64 },
   storyRing: {
     padding: 3,
-    borderRadius: 40,
-    borderWidth: 2.5,
+    borderRadius: 24, // Squircle cho tin
+    borderWidth: 2,
     borderColor: c.storyBorder || c.accent,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  storyImg: { width: 56, height: 56, borderRadius: 28, backgroundColor: c.bgInput },
+  storyImg: { width: 54, height: 54, borderRadius: 20, backgroundColor: c.bgInput },
   addBtn: {
-    width: 24, height: 24, borderRadius: 12,
+    width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',
   },
-  storyLabel: { fontSize: 12, fontWeight: '500', color: c.text, textAlign: 'center' },
+  storyLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
 
-  // Post card
-  postCard: { 
-    backgroundColor: c.bgCard, 
-    marginHorizontal: 16, 
-    marginBottom: 16, 
-    borderRadius: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 0,
-  },
-  postHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
-  postAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: c.bgInput },
-  postMeta: { flex: 1, marginLeft: 12 },
-  postAuthor: { fontSize: 15, fontWeight: '700', color: c.text, marginBottom: 2 },
-  postTimeRow: { flexDirection: 'row', alignItems: 'center' },
-  postTime: { fontSize: 12, color: c.textMuted },
-  moreBtn: { padding: 6, backgroundColor: c.bgInput, borderRadius: 16 },
-  postContent: { fontSize: 15, color: c.text, lineHeight: 22, paddingHorizontal: 16, paddingBottom: 16 },
-  postMediaWrap: { paddingHorizontal: 16, paddingBottom: 16 },
-  postMedia: { width: '100%', height: 240, borderRadius: 16, backgroundColor: c.bgInput },
-  
-  statsRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingBottom: 12,
-  },
-  reactRow: { flexDirection: 'row', alignItems: 'center' },
-  emojiWrap: { 
-    width: 24, height: 24, borderRadius: 12, backgroundColor: c.bgCard, 
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: c.bgCard,
-    zIndex: 1,
-  },
-  reactEmoji: { fontSize: 12 },
-  statsText: { fontSize: 13, color: c.textSub, marginLeft: 6, fontWeight: '500' },
-  
-  actionsDivider: { height: 1, backgroundColor: c.border + '60', marginHorizontal: 16 },
-  actionsRow: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 8 },
-  actionItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 8, borderRadius: 16 },
-  actionText: { fontSize: 14, fontWeight: '600', color: c.postAction },
-
-  // Empty
-  emptyBox: { paddingTop: 60, alignItems: 'center', gap: 8 },
-  emptyText: { fontSize: 16, fontWeight: '700', color: c.textSub },
-  emptySub: { fontSize: 14, color: c.textMuted },
+  // Empty State
+  emptyBox: { paddingTop: 80, alignItems: 'center' },
+  emptyIconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyText: { fontSize: 17, fontWeight: '800' },
+  emptySub: { fontSize: 14, marginTop: 4 },
 });

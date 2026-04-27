@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from 'rea
 import { Ionicons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
 import { useTheme } from '../../../utils/ThemeContext';
+import Avatar from '../../../components/Avatar';
 
 const ITEMS = [
   { id: '1', icon: 'play-skip-forward', iconLib: 'ion', iconColor: '#facc15', title: 'Zalo Video', desc: '[Xem nhiều] Đây có phải là Cổ Khiết...', hasPreview: true },
@@ -45,8 +46,10 @@ export default function DiscoverScreen() {
                 {item.desc && <Text style={s.itemDesc} numberOfLines={1}>{item.desc}</Text>}
               </View>
               {item.hasPreview && (
-                <Image
-                  source={{ uri: 'https://i.pravatar.cc/50?u=zv' }}
+                <Avatar
+                  url={null}
+                  size={40}
+                  rounded={false}
                   style={s.preview}
                 />
               )}

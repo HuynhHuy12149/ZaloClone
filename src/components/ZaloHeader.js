@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../utils/ThemeContext';
+import Avatar from './Avatar';
+import { useAuthStore } from '../store/authStore';
 
 /**
  * ZaloHeader
@@ -19,11 +21,21 @@ export default function ZaloHeader({
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const user = useAuthStore(state => state.user);
   const s = styles(colors);
 
   return (
     <View style={[s.container, { paddingTop: insets.top + 8 }]}>
       <View style={s.inner}>
+        {!title && (
+          <TouchableOpacity style={s.headerAvatar} activeOpacity={0.7}>
+            <Avatar 
+              url={user?.avatar_url} 
+              name={user?.full_name} 
+              size={36} 
+            />
+          </TouchableOpacity>
+        )}
         {title ? (
           <Text style={s.title}>{title}</Text>
         ) : (
@@ -68,6 +80,9 @@ const styles = (c) => StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: c.text,
+  },
+  headerAvatar: {
+    marginRight: 12,
   },
   searchBar: {
     flex: 1,

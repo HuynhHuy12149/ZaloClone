@@ -7,6 +7,7 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import ZaloHeader from '../../../components/ZaloHeader';
 import AnimatedTabBar from '../../../components/AnimatedTabBar';
 import { useTheme } from '../../../utils/ThemeContext';
+import Avatar from '../../../components/Avatar';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -105,9 +106,10 @@ export default function ContactsScreen() {
                 <View key={friend.id}>
                   <TouchableOpacity style={s.friendRow} activeOpacity={0.7}>
                     <View style={s.avatarWrap}>
-                      <Image
-                        source={{ uri: `https://i.pravatar.cc/100?u=${friend.id}` }}
-                        style={s.avatar}
+                      <Avatar
+                        url={null}
+                        name={friend.name}
+                        size={50}
                       />
                       {friend.online && <View style={s.onlineDot} />}
                     </View>
