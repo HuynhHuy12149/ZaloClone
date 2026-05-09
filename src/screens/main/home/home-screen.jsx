@@ -55,6 +55,15 @@ export default function HomeScreen({ navigation }) {
     const channel = supabase
       .channel(channelId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchPosts)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+        setPosts(currentPosts => 
+          currentPosts.map(post => 
+            post.id === payload.new.id 
+              ? { ...post, moderation_status: payload.new.moderation_status } 
+              : post
+          )
+        );
+      })
       .subscribe();
     return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
@@ -125,8 +134,19 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
+  const updatePost = (updatedPost) => {
+    setPosts(prev => prev.map(p => p.id === updatedPost.id ? { ...p, ...updatedPost } : p));
+  };
+
   const renderItem = ({ item }) => (
-    <PostItem item={item} colors={colors} onOpenPreview={openPreview} onLike={handleLike} />
+    <PostItem 
+      item={item} 
+      colors={colors} 
+      onOpenPreview={openPreview} 
+      onLike={handleLike} 
+      navigation={navigation}
+      onPress={() => navigation.navigate('PostDetail', { post: item, onUpdatePost: updatePost })}
+    />
   );
 
   return (
@@ -154,6 +174,7 @@ export default function HomeScreen({ navigation }) {
           data={posts}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
+          extraData={posts}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={s.listContent}
           ListEmptyComponent={

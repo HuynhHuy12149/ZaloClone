@@ -1,5 +1,6 @@
 import { CreatePostScreen } from '../screens/main/post';
 import { MessageDetailScreen } from '../screens/main/message/detail';
+import PostDetailScreen from '../screens/main/home/post-detail/PostDetailScreen';
 
 
 const Routers = [
@@ -11,6 +12,10 @@ const Routers = [
   {
     name: "MessageDetail",
     component: MessageDetailScreen,
+  },
+  {
+    name: "PostDetail",
+    component: PostDetailScreen,
   }
 ];
 

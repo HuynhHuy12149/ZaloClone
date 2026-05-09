@@ -1,0 +1,162 @@
+{
+  "name": "Content Moderation Auto-Update",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-moderation",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-001",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "post-moderation-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst record = body.record;\n\nconst content = record.content || '';\nconst mediaCount = (record.media_urls || []).length;\n\nlet contentForAI = content;\nif (!content && mediaCount > 0) {\n  contentForAI = `[Post co ${mediaCount} anh/video, khong co text]`;\n}\nif (!contentForAI) {\n  contentForAI = '[Post trong]';\n}\n\nreturn [{\n  json: {\n    postId: record.id,\n    authorId: record.author_id,\n    content: contentForAI\n  }\n}];"
+      },
+      "id": "node-002",
+      "name": "Extract Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk-or-v1-ec114ae1450ddfd6b1c3290524115ea798cca05ed2c22da8ef6f750d17bbdd"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "HTTP-Referer",
+              "value": "https://zaloclone.app"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"meta-llama/llama-3.1-8b-instruct:free\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a Vietnamese social network content moderator. Analyze the post and return ONLY this exact JSON: {\\\"is_sensitive\\\": true/false, \\\"reason\\\": \\\"brief reason in Vietnamese\\\"}. Mark sensitive=true ONLY if content clearly contains: bao luc nghiem trong (serious violence), noi dung tinh duc (sexual content), kich dong thu han (hate speech), thong tin nguy hiem (dangerous misinformation), spam. Normal everyday Vietnamese social posts = false. Be lenient.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ 'Phan tich bai post nay: ' + $json.content }}\"\n    }\n  ],\n  \"temperature\": 0.1,\n  \"max_tokens\": 150\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "node-003",
+      "name": "OpenRouter AI Analyze",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json;\nconst prevData = $('Extract Post Data').first().json;\n\nconst aiContent = aiResponse.choices?.[0]?.message?.content?.trim() || '';\n\nlet parsed;\ntry {\n  const jsonMatch = aiContent.match(/\\{[\\s\\S]*?\\}/);\n  if (!jsonMatch) throw new Error('No JSON found');\n  parsed = JSON.parse(jsonMatch[0]);\n} catch(e) {\n  parsed = { is_sensitive: false, reason: 'parse_error' };\n}\n\nreturn [{\n  json: {\n    postId: prevData.postId,\n    is_sensitive: parsed.is_sensitive === true,\n    reason: parsed.reason || ''\n  }\n}];"
+      },
+      "id": "node-004",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json.is_sensitive }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-005",
+      "name": "Is Sensitive?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://bghrkuunjanwgcckrdjr.supabase.co/rest/v1/posts?id=eq.{{ $json.postId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_secret_2UwdYk95lskLOopjZeTn3g_XUEx_x3Bn"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_secret_2UwdYk95lskLOopjZeTn3g_XUEx_x3Bn"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"moderation_status\": \"sensitive\", \"moderation_reason\": \"{{ $json.reason }}\"}",
+        "options": {}
+      },
+      "id": "node-006",
+      "name": "Update Status to Sensitive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 180]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Extract Post Data", "type": "main", "index": 0}]]
+    },
+    "Extract Post Data": {
+      "main": [[{"node": "OpenRouter AI Analyze", "type": "main", "index": 0}]]
+    },
+    "OpenRouter AI Analyze": {
+      "main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]
+    },
+    "Parse AI Response": {
+      "main": [[{"node": "Is Sensitive?", "type": "main", "index": 0}]]
+    },
+    "Is Sensitive?": {
+      "main": [
+        [{"node": "Update Status to Sensitive", "type": "main", "index": 0}],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

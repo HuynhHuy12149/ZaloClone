@@ -131,3 +131,55 @@ export const handleReaction = async (postId, type = 'heart') => {
       })
   );
 };
+
+// Lấy danh sách bình luận của bài viết
+export const getComments = async (postId) => {
+  return await supabaseProxy(
+    supabase
+      .from('comments')
+      .select(`
+        *,
+        profiles:user_id(id, username, full_name, avatar_url)
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+  );
+};
+
+// Thêm bình luận mới
+export const addComment = async (postId, content, type = 'text', parentId = null, mediaUrl = null) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, message: 'Chưa đăng nhập' };
+
+  return await supabaseProxy(
+    supabase
+      .from('comments')
+      .insert([
+        {
+          post_id: postId,
+          user_id: user.id,
+          content,
+          type,
+          parent_id: parentId,
+          media_url: mediaUrl,
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select('*, profiles:user_id(id, username, full_name, avatar_url)')
+      .single()
+  );
+};
+
+// Lấy thông tin 1 bài viết theo ID
+export const getPostById = async (postId) => {
+  return await supabaseProxy(
+    supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles:author_id(id, username, full_name, avatar_url)
+      `)
+      .eq('id', postId)
+      .single()
+  );
+};

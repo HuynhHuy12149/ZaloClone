@@ -5,13 +5,12 @@ import MenuControl from '../../../../../components/MenuControl';
 import { REACTIONS } from '../../../../../utils/constants/postEnums';
 import { handleReaction } from '../../../../../services/supabaseService/postService';
 
-export default function PostActions({ item, colors, onReactionUpdate }) {
+export default function PostActions({ item, colors, onReactionUpdate, onCommentPress, isDetail }) {
   const [localLiked, setLocalLiked] = useState(item.is_liked);
   const [reactionType, setReactionType] = useState(item.user_reaction || 'heart');
   const [showPicker, setShowPicker] = useState(false);
   const likeBtnRef = useRef(null);
 
-  // Đồng bộ khi item thay đổi từ bên ngoài
   useEffect(() => {
     setLocalLiked(item.is_liked);
     setReactionType(item.user_reaction || 'heart');
@@ -19,20 +18,16 @@ export default function PostActions({ item, colors, onReactionUpdate }) {
 
   const handleLike = async () => {
     const newLikedState = !localLiked;
-    // Nếu like mới thì mặc định là heart, nếu bỏ like thì gửi type hiện tại để DB xóa đúng dòng đó
     const type = newLikedState ? 'heart' : reactionType;
-
     const oldLiked = localLiked;
     const oldType = reactionType;
 
-    // Optimistic UI
     setLocalLiked(newLikedState);
     if (newLikedState) setReactionType('heart');
     if (onReactionUpdate) onReactionUpdate(newLikedState, type);
 
     const res = await handleReaction(item.id, type);
     if (!res.success) {
-      // Rollback nếu lỗi
       setLocalLiked(oldLiked);
       setReactionType(oldType);
       if (onReactionUpdate) onReactionUpdate(oldLiked, oldType);
@@ -44,14 +39,12 @@ export default function PostActions({ item, colors, onReactionUpdate }) {
     const oldLiked = localLiked;
     const oldType = reactionType;
 
-    // Optimistic UI
     setLocalLiked(true);
     setReactionType(type);
     if (onReactionUpdate) onReactionUpdate(true, type);
 
     const res = await handleReaction(item.id, type);
     if (!res.success) {
-      // Rollback
       setLocalLiked(oldLiked);
       setReactionType(oldType);
       if (onReactionUpdate) onReactionUpdate(oldLiked, oldType);
@@ -75,37 +68,52 @@ export default function PostActions({ item, colors, onReactionUpdate }) {
       <TouchableOpacity
         ref={likeBtnRef}
         collapsable={false}
-        style={styles.actionBtn}
-        activeOpacity={0.6}
+        style={[
+          styles.actionBtn, 
+          { backgroundColor: localLiked ? '#ff475715' : colors.bgInput + '40' },
+          isDetail && { flex: 0, paddingHorizontal: 20 } // Don't take full width in detail
+        ]}
+        activeOpacity={0.7}
         onPress={handleLike}
         onLongPress={() => setShowPicker(true)}
       >
         {localLiked ? (
           <>
-            <Text style={{ fontSize: 20, marginRight: 6 }}>
+            <Text style={{ fontSize: 18, marginRight: 4 }}>
               {REACTIONS.find(r => r.id === reactionType)?.emoji || '👍'}
             </Text>
-            <Text style={[styles.actionBtnText, { color: colors.accent, fontWeight: '700' }]}>
+            <Text style={[styles.actionBtnText, { color: '#ff4757' }]}>
               {REACTIONS.find(r => r.id === reactionType)?.label || 'Thích'}
             </Text>
           </>
         ) : (
           <>
-            <Ionicons name="heart-outline" size={22} color={colors.text} />
+            <Ionicons name="heart-outline" size={20} color={colors.text} />
             <Text style={[styles.actionBtnText, { color: colors.text }]}>Yêu thích</Text>
           </>
         )}
       </TouchableOpacity>
+      
+      {!isDetail && (
+        <>
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: colors.bgInput + '40' }]} 
+            activeOpacity={0.7} 
+            onPress={onCommentPress}
+          >
+            <MaterialCommunityIcons name="comment-outline" size={19} color={colors.text} />
+            <Text style={[styles.actionBtnText, { color: colors.text }]}>Phản hồi</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.actionBtn} activeOpacity={0.6}>
-        <MaterialCommunityIcons name="comment-outline" size={21} color={colors.text} />
-        <Text style={[styles.actionBtnText, { color: colors.text }]}>Phản hồi</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.actionBtn} activeOpacity={0.6}>
-        <Ionicons name="share-social-outline" size={22} color={colors.text} />
-        <Text style={[styles.actionBtnText, { color: colors.text }]}>Gửi</Text>
-      </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionBtn, { backgroundColor: colors.bgInput + '40' }]} 
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={20} color={colors.text} />
+            <Text style={[styles.actionBtnText, { color: colors.text }]}>Gửi</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -114,19 +122,21 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 20, // Pill style
+    gap: 4,
   },
   actionBtnText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700', // Bolder font
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, Platform, Alert, Dimensions, Pressable } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import PostContent from './PostContent';
 import PostMediaGallery from './PostMediaGallery';
 import ReactionStats from './ReactionStats';
@@ -10,10 +11,19 @@ import Avatar from '../../../../../components/Avatar';
 
 const { width } = Dimensions.get('window');
 
-export default function PostItem({ item, colors, onOpenPreview, onLike }) {
+export default function PostItem({ item, colors, onOpenPreview, onLike, navigation, onPress, isDetail }) {
   const [localLiked, setLocalLiked] = useState(item.is_liked);
   const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
   const [localReactionTypes, setLocalReactionTypes] = useState(item.reaction_types || []);
+  
+  const isSensitive = item.moderation_status === 'sensitive';
+
+  // Sync with props when they change from outside
+  useEffect(() => {
+    setLocalLiked(item.is_liked);
+    setLocalLikeCount(item.like_count || 0);
+    setLocalReactionTypes(item.reaction_types || []);
+  }, [item.is_liked, item.like_count, item.reaction_types]);
   const [localUserReaction, setLocalUserReaction] = useState(item.user_reaction || null);
 
   // Sync with prop changes
@@ -46,6 +56,14 @@ export default function PostItem({ item, colors, onOpenPreview, onLike }) {
     setLocalLiked(isLiked);
   };
 
+  const goToDetail = () => {
+    if (onPress) {
+      onPress();
+    } else if (navigation) {
+      navigation.navigate('PostDetail', { post: item });
+    }
+  };
+
   const handleLocationPress = async () => {
     if (!item.latitude || !item.longitude) {
       Alert.alert('Thông báo', 'Bài viết này không có dữ liệu tọa độ bản đồ.');
@@ -76,77 +94,106 @@ export default function PostItem({ item, colors, onOpenPreview, onLike }) {
   return (
     <View style={[s.postCard, { backgroundColor: colors.bgCard }]}>
       {/* HEADER SECTION */}
-      <View style={s.postHeader}>
-        <Avatar
-          url={item.profiles?.avatar_url}
-          name={item.profiles?.full_name || 'Người dùng'}
-          size={48}
-          rounded={false}
-        />
-        <View style={s.postMeta}>
-          <View style={s.authorRow}>
-            <Text style={[s.postAuthor, { color: colors.text }]} numberOfLines={1}>
-              {item.profiles?.full_name || 'Người dùng'}
-            </Text>
-            {item.tagged_friends?.length > 0 && (
-              <View style={[s.tagBadge, { backgroundColor: colors.accent + '15' }]}>
-                <Text style={[s.tagBadgeText, { color: colors.accent }]}>
-                  +{item.tagged_friends.length} người bạn
-                </Text>
-              </View>
-            )}
+      <Pressable onPress={goToDetail}>
+        <View style={s.postHeader}>
+          <Avatar
+            url={item.profiles?.avatar_url}
+            name={item.profiles?.full_name || 'Người dùng'}
+            size={48}
+            rounded={false}
+          />
+          <View style={s.postMeta}>
+            <View style={s.authorRow}>
+              <Text style={[s.postAuthor, { color: colors.text }]} numberOfLines={1}>
+                {item.profiles?.full_name || 'Người dùng'}
+              </Text>
+              {item.tagged_friends?.length > 0 && (
+                <View style={[s.tagBadge, { backgroundColor: colors.accent + '15' }]}>
+                  <Text style={[s.tagBadgeText, { color: colors.accent }]}>
+                    +{item.tagged_friends.length} người bạn
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={s.subMetaRow}>
+              <Text style={[s.postTime, { color: colors.textMuted }]}>
+                {formatRelativeTime(item.created_at)}
+              </Text>
+              <View style={[s.dot, { backgroundColor: colors.textMuted + '40' }]} />
+              <Ionicons 
+                name={
+                  item.privacy === 'Private' ? 'lock-closed' : 
+                  item.privacy === 'Friends' ? 'people' : 'earth'
+                } 
+                size={12} 
+                color={colors.textMuted} 
+              />
+            </View>
           </View>
           
-          <View style={s.subMetaRow}>
-            <Text style={[s.postTime, { color: colors.textMuted }]}>
-              {formatRelativeTime(item.created_at)}
-            </Text>
-            <View style={[s.dot, { backgroundColor: colors.textMuted + '40' }]} />
-            <Ionicons 
-              name={
-                item.privacy === 'Private' ? 'lock-closed' : 
-                item.privacy === 'Friends' ? 'people' : 'earth'
-              } 
-              size={12} 
-              color={colors.textMuted} 
+          {!isDetail && (
+            <TouchableOpacity style={[s.moreBtn, { backgroundColor: colors.bgInput + '40' }]}>
+              <MaterialCommunityIcons name="dots-horizontal" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* LOCATION PILL (IF EXISTS) */}
+        {item.location_name && (
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            onPress={handleLocationPress} 
+            style={s.locationContainer}
+          >
+            <View style={[s.locationPill, { backgroundColor: colors.bgInput + '60' }]}>
+              <Ionicons name="location" size={14} color={colors.accent} />
+              <Text style={[s.locationText, { color: colors.text }]} numberOfLines={1}>
+                {item.location_name}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            </View>
+          </TouchableOpacity>
+        )}
+      </Pressable>
+
+      {/* SENSITIVE WRAPPER */}
+      <View style={{ position: 'relative', overflow: 'hidden', minHeight: isSensitive ? 260 : undefined }}>
+        <Pressable onPress={goToDetail}>
+          {/* CONTENT SECTION */}
+          <View style={[s.contentWrapper, isSensitive && { opacity: 0.3 }]}>
+            <PostContent 
+              content={item.content} 
+              colors={colors} 
+              fontStyle={item.font_style} 
+              textColor={item.text_color} 
             />
           </View>
+        </Pressable>
+
+        {/* MEDIA SECTION */}
+        <View style={isSensitive && { opacity: 0.3 }}>
+          <PostMediaGallery item={item} onOpenPreview={onOpenPreview} />
         </View>
-        
-        <TouchableOpacity style={[s.moreBtn, { backgroundColor: colors.bgInput + '40' }]}>
-          <MaterialCommunityIcons name="dots-horizontal" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
-      </View>
 
-      {/* LOCATION PILL (IF EXISTS) */}
-      {item.location_name && (
-        <TouchableOpacity 
-          activeOpacity={0.7} 
-          onPress={handleLocationPress} 
-          style={s.locationContainer}
-        >
-          <View style={[s.locationPill, { backgroundColor: colors.bgInput + '60' }]}>
-            <Ionicons name="location" size={14} color={colors.accent} />
-            <Text style={[s.locationText, { color: colors.text }]} numberOfLines={1}>
-              {item.location_name}
+        {/* SENSITIVE OVERLAY */}
+        {isSensitive && (
+          <BlurView 
+            style={[StyleSheet.absoluteFill, s.sensitiveOverlay]} 
+            intensity={90} 
+            tint="systemMaterial"
+          >
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bgCard + 'B3' }]} />
+            <View style={[s.sensitiveIconBox, { backgroundColor: colors.bgInput }]}>
+              <MaterialCommunityIcons name="eye-off-outline" size={32} color={colors.text} />
+            </View>
+            <Text style={[s.sensitiveTitle, { color: colors.text }]}>Nội dung nhạy cảm</Text>
+            <Text style={[s.sensitiveDesc, { color: colors.textMuted }]}>
+              Bài viết này bị ẩn vì có thể chứa nội dung không phù hợp.
             </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* CONTENT SECTION */}
-      <View style={s.contentWrapper}>
-        <PostContent 
-          content={item.content} 
-          colors={colors} 
-          fontStyle={item.font_style} 
-          textColor={item.text_color} 
-        />
+          </BlurView>
+        )}
       </View>
-
-      {/* MEDIA SECTION */}
-      <PostMediaGallery item={item} onOpenPreview={onOpenPreview} />
 
       {/* MUSIC CARD SECTION */}
       {item.music_data && (
@@ -187,6 +234,8 @@ export default function PostItem({ item, colors, onOpenPreview, onLike }) {
           item={item} 
           colors={colors} 
           onReactionUpdate={onReactionUpdate}
+          onCommentPress={goToDetail}
+          isDetail={isDetail}
         />
       </View>
     </View>
@@ -303,4 +352,39 @@ const s = StyleSheet.create({
     gap: 8 
   },
   actionBtnText: { fontSize: 14, fontWeight: '700' },
+  sensitiveOverlay: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    zIndex: 10,
+  },
+  sensitiveIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  sensitiveTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  sensitiveDesc: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  sensitiveBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  sensitiveBtnText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });
