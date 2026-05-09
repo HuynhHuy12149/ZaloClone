@@ -33,6 +33,12 @@ export default function MessageDetailScreen({ route, navigation }) {
   const limit = 10;
   const flatListRef = useRef(null);
 
+  // Typing Status State
+  const [typingUsers, setTypingUsers] = useState({});
+  const channelRef = useRef(null);
+  const typingTimers = useRef({});
+  const lastTypingTime = useRef(0);
+
   // Add Member State
   const [showAddMember, setShowAddMember] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
@@ -65,9 +71,37 @@ export default function MessageDetailScreen({ route, navigation }) {
       markMessagesAsRead(chatRoomId, currentUser.id).catch(err => console.log('Error marking messages as read:', err));
     }
 
-    // Subscribe to new messages
-    const subscription = supabase
-      .channel(`room:${chatRoomId}`)
+    const channel = supabase.channel(`room:${chatRoomId}`);
+    channelRef.current = channel;
+
+    channel
+      .on('broadcast', { event: 'typing' }, payload => {
+        const { userId, username, isTyping } = payload.payload;
+        if (userId === currentUser?.id) return;
+
+        if (isTyping) {
+          setTypingUsers(prev => ({ ...prev, [userId]: username }));
+          if (typingTimers.current[userId]) {
+            clearTimeout(typingTimers.current[userId]);
+          }
+          typingTimers.current[userId] = setTimeout(() => {
+            setTypingUsers(prev => {
+              const next = { ...prev };
+              delete next[userId];
+              return next;
+            });
+          }, 3000);
+        } else {
+          setTypingUsers(prev => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+          if (typingTimers.current[userId]) {
+            clearTimeout(typingTimers.current[userId]);
+          }
+        }
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${chatRoomId}` }, async payload => {
         if (payload.new.sender_id === currentUser?.id) return; // Ignore own messages from realtime
 
@@ -91,9 +125,35 @@ export default function MessageDetailScreen({ route, navigation }) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
+      Object.values(typingTimers.current).forEach(clearTimeout);
     };
   }, [chatRoomId]);
+
+  const handleTyping = (text) => {
+    setInputText(text);
+    
+    if (!channelRef.current || !currentUser?.id) return;
+
+    if (text.length === 0) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: currentUser.id, username: currentUser.full_name || currentUser.username || 'Ai đó', isTyping: false }
+      });
+      lastTypingTime.current = 0;
+    } else {
+      const now = Date.now();
+      if (now - lastTypingTime.current > 2000) { // Throttle broadcast to every 2 seconds
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { userId: currentUser.id, username: currentUser.full_name || currentUser.username || 'Ai đó', isTyping: true }
+        });
+        lastTypingTime.current = now;
+      }
+    }
+  };
 
   const fetchMessages = async (pageNumber = 1) => {
     if (pageNumber === 1) setLoading(true);
@@ -124,6 +184,15 @@ export default function MessageDetailScreen({ route, navigation }) {
 
     const textToSend = inputText.trim();
     setInputText('');
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: currentUser.id, isTyping: false }
+      });
+      lastTypingTime.current = 0;
+    }
 
     // Optimistic UI update
     const tempId = Date.now().toString();
@@ -172,13 +241,21 @@ export default function MessageDetailScreen({ route, navigation }) {
     );
   };
 
+  const typingUserNames = Object.values(typingUsers);
+  let typingText = '';
+  if (typingUserNames.length === 1) {
+    typingText = `${typingUserNames[0]} đang soạn tin...`;
+  } else if (typingUserNames.length > 1) {
+    typingText = `${typingUserNames.join(', ')} đang soạn tin...`;
+  }
+
   return (
     <>
       <SafeAreaView style={{ flex: 0, backgroundColor: colors.bgCard }} edges={['top']} />
       <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
         <KeyboardAvoidingView
           style={s.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 0}
         >
           {/* Header */}
@@ -243,12 +320,13 @@ export default function MessageDetailScreen({ route, navigation }) {
             {/* Floating Input Area */}
             <ChatInput
               inputText={inputText}
-              setInputText={setInputText}
+              setInputText={handleTyping}
               showPlusMenu={showPlusMenu}
               setShowPlusMenu={setShowPlusMenu}
               handleSend={handleSend}
               insets={insets}
               colors={colors}
+              typingText={typingText}
             />
           </View>
         </KeyboardAvoidingView>

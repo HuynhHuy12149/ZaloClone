@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, Text, Platform, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, Platform, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ChatInput({
@@ -9,12 +9,20 @@ export default function ChatInput({
   setShowPlusMenu,
   handleSend,
   insets,
-  colors
+  colors,
+  typingText
 }) {
   const s = styles(colors);
 
   return (
     <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+      {typingText ? (
+        <View style={s.typingContainer}>
+          <Text style={s.typingText}>{typingText.replace('...', '')}</Text>
+          <AnimatedTypingDots color={colors.textMuted || '#888'} />
+        </View>
+      ) : null}
+
       {showPlusMenu && (
         <View style={[s.plusMenu, { bottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) + 60 : Math.max(insets.bottom - 10, 12) + 60 }]}>
           <TouchableOpacity style={s.plusMenuItem}>
@@ -68,6 +76,52 @@ export default function ChatInput({
     </View>
   );
 }
+
+const AnimatedTypingDots = ({ color }) => {
+  const dot1 = React.useRef(new Animated.Value(0)).current;
+  const dot2 = React.useRef(new Animated.Value(0)).current;
+  const dot3 = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const createAnimation = (dot) =>
+      Animated.sequence([
+        Animated.timing(dot, {
+          toValue: -4,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]);
+
+    Animated.loop(
+      Animated.stagger(150, [
+        createAnimation(dot1),
+        createAnimation(dot2),
+        createAnimation(dot3)
+      ])
+    ).start();
+  }, [dot1, dot2, dot3]);
+
+  const dotStyle = {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: color,
+    marginHorizontal: 2,
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 2, marginTop: 4 }}>
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot1 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot2 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot3 }] }]} />
+    </View>
+  );
+};
 
 const styles = (c) => StyleSheet.create({
   inputContainer: {
@@ -178,5 +232,17 @@ const styles = (c) => StyleSheet.create({
     fontSize: 15,
     color: c.text,
     fontWeight: '500',
+  },
+  typingContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 0,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typingText: {
+    fontSize: 12,
+    color: c.textMuted || '#888',
+    fontStyle: 'italic',
   },
 });
