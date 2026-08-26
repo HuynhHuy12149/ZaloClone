@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const CACHE_KEYS = {
   AUTH_INFO: 'auth_info',
-  // Khai báo thêm các key cache khác ở đây để dễ quản lý
+  THEME_MODE: 'app_theme_mode',
+  LANGUAGE: 'app_language',
 };
 
 // === CACHE HELPERS ===

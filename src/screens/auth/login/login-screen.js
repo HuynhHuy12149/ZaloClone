@@ -1,56 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { login, getProfile } from '@/base/services/authService';
-import { useAuthStore } from '@/base/shared/store/authStore';
+import { useLoginMutation } from '@/base/services/queries';
 import { useTheme } from '@/base/context/ThemeContext';
+import { showToast } from '@/base/shared/utils/toast';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const logInAction = useAuthStore((state) => state.logIn);
-  const { colors, isDark } = useTheme();
+  const loginMutation = useLoginMutation();
+  const { colors } = useTheme();
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!email || !password) {
-      Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
+      showToast.error('Thông báo', 'Vui lòng nhập email và mật khẩu');
       return;
     }
 
-    setLoading(true);
-    const response = await login(email, password);
-
-    if (!response.success) {
-      setLoading(false);
-      Alert.alert('Đăng nhập thất bại', response.message);
-    } else {
-      try {
-        const user = response.data?.user;
-        if (user) {
-          const profileRes = await getProfile(user.id);
-          const profile = profileRes.success ? profileRes.data : null;
-
-          const authInfo = {
-            id: user.id,
-            username: profile?.username || user.user_metadata?.username,
-            full_name: profile?.full_name || user.user_metadata?.full_name,
-            avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
-          };
-
-          await logInAction(authInfo);
-        }
-      } catch (error) {
-        console.error('Error saving auth info:', error);
-      } finally {
-        setLoading(false);
+    loginMutation.mutate(
+      { email, password },
+      {
+        onError: (error) => {
+          showToast.error('Đăng nhập thất bại', error.message || 'Vui lòng thử lại');
+        },
       }
-    }
+    );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f2f2f7] dark:bg-black">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bg }}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -68,20 +47,21 @@ export default function LoginScreen({ navigation }) {
             >
               <Ionicons name="chatbubbles" size={36} color="#fff" />
             </View>
-            <Text className="text-4xl font-extrabold text-black dark:text-white mb-2 tracking-tight">Zalo</Text>
-            <Text className="text-base text-gray-500 dark:text-gray-400">Đăng nhập để kết nối với bạn bè</Text>
+            <Text className="text-4xl font-extrabold mb-2 tracking-tight" style={{ color: colors?.text || '#000' }}>Zalo</Text>
+            <Text className="text-base" style={{ color: colors?.textSub || '#6b7280' }}>Đăng nhập để kết nối với bạn bè</Text>
           </View>
 
           {/* Form */}
           <View className="w-full">
             <View 
-              className="bg-white dark:bg-zalo-darkCard rounded-3xl py-1 mb-4 shadow-sm"
-              style={{ elevation: 1 }}
+              className="rounded-3xl py-1 mb-4 shadow-sm"
+              style={{ elevation: 1, backgroundColor: colors.bgCard }}
             >
               <View className="flex-row items-center px-5 py-3.5 gap-3">
                 <Ionicons name="mail-outline" size={20} color={colors?.iconSub || '#9ca3af'} />
                 <TextInput
-                  className="flex-1 text-base text-black dark:text-white min-h-[40px] p-0"
+                  className="flex-1 text-base min-h-[40px] p-0"
+                  style={{ color: colors?.text || '#000' }}
                   placeholder="Email hoặc Số điện thoại"
                   placeholderTextColor={colors?.textPlaceholder || '#9ca3af'}
                   value={email}
@@ -90,11 +70,12 @@ export default function LoginScreen({ navigation }) {
                   keyboardType="email-address"
                 />
               </View>
-              <View className="h-[1px] bg-gray-200 dark:bg-zalo-darkBorder ml-14" />
+              <View className="h-[1px] ml-14" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
               <View className="flex-row items-center px-5 py-3.5 gap-3">
                 <Ionicons name="lock-closed-outline" size={20} color={colors?.iconSub || '#9ca3af'} />
                 <TextInput
-                  className="flex-1 text-base text-black dark:text-white min-h-[40px] p-0"
+                  className="flex-1 text-base min-h-[40px] p-0"
+                  style={{ color: colors?.text || '#000' }}
                   placeholder="Nhập mật khẩu"
                   placeholderTextColor={colors?.textPlaceholder || '#9ca3af'}
                   value={password}
@@ -109,13 +90,13 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-zalo-blue rounded-3xl py-4 items-center justify-center shadow-md shadow-zalo-blue/30 mb-8"
+              className={`bg-zalo-blue rounded-3xl py-4 items-center justify-center shadow-md shadow-zalo-blue/30 mb-8 ${loginMutation.isPending ? 'opacity-70' : ''}`}
               style={{ elevation: 4 }}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loginMutation.isPending}
               activeOpacity={0.8}
             >
-              {loading ? (
+              {loginMutation.isPending ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-[17px] font-bold text-white">Đăng nhập</Text>
@@ -128,7 +109,7 @@ export default function LoginScreen({ navigation }) {
             className="items-center mt-auto pt-5"
             onPress={() => navigation.navigate('Register')}
           >
-            <Text className="text-[15px] text-gray-500 dark:text-gray-400">
+            <Text className="text-[15px]" style={{ color: colors?.textSub || '#6b7280' }}>
               Bạn chưa có tài khoản? <Text className="font-bold text-zalo-blue">Đăng ký ngay</Text>
             </Text>
           </TouchableOpacity>

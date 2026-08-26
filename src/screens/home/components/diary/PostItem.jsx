@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, Linking, Platform, Alert, Dimensions, Pressable } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Linking, Platform, Dimensions, Pressable } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import PostContent from './PostContent';
@@ -7,11 +7,15 @@ import PostMediaGallery from './PostMediaGallery';
 import ReactionStats from './ReactionStats';
 import PostActions from './PostActions';
 import { formatRelativeTime } from '@/base/shared/utils/dateUtils';
+import { showToast } from '@/base/shared/utils/toast';
 import Avatar from '@/base/components/Avatar';
+import { useTheme } from '@/base/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-export default function PostItem({ item, colors, onOpenPreview, onLike, navigation, onPress, isDetail }) {
+export default function PostItem({ item, colors: propColors, onOpenPreview, onLike, navigation, onPress, isDetail }) {
+  const { colors: themeColors, isDark } = useTheme();
+  const colors = propColors || themeColors;
   const [localLiked, setLocalLiked] = useState(item.is_liked);
   const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
   const [localReactionTypes, setLocalReactionTypes] = useState(item.reaction_types || []);
@@ -66,7 +70,7 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
 
   const handleLocationPress = async () => {
     if (!item.latitude || !item.longitude) {
-      Alert.alert('Thông báo', 'Bài viết này không có dữ liệu tọa độ bản đồ.');
+      showToast.info('Thông báo', 'Bài viết này không có dữ liệu tọa độ bản đồ.');
       return;
     }
 
@@ -87,14 +91,14 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
         await Linking.openURL(webUrl);
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể mở ứng dụng bản đồ');
+      showToast.error('Lỗi', 'Không thể mở ứng dụng bản đồ');
     }
   };
 
   return (
     <View 
-      className="mx-3 mb-4 rounded-[32px] pt-4 overflow-hidden shadow-sm bg-white dark:bg-zalo-darkCard"
-      style={{ elevation: 2 }}
+      className="mx-3 mb-4 rounded-[32px] pt-4 overflow-hidden shadow-sm"
+      style={{ elevation: 2, backgroundColor: colors.bgCard }}
     >
       {/* HEADER SECTION */}
       <Pressable onPress={goToDetail}>
@@ -108,8 +112,8 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
           <View className="flex-1 ml-3 justify-center">
             <View className="flex-row items-center">
               <Text 
-                className="text-base font-extrabold text-black dark:text-white" 
-                style={{ maxWidth: width * 0.4 }}
+                className="text-base font-extrabold" 
+                style={{ maxWidth: width * 0.4, color: colors?.text || '#000' }}
                 numberOfLines={1}
               >
                 {item.profiles?.full_name || 'Người dùng'}
@@ -124,7 +128,7 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
             </View>
             
             <View className="flex-row items-center mt-0.5">
-              <Text className="text-xs font-medium text-gray-400 dark:text-gray-500">
+              <Text className="text-xs font-medium" style={{ color: colors?.textSub || '#9ca3af' }}>
                 {formatRelativeTime(item.created_at)}
               </Text>
               <View className="w-1 h-1 rounded-full mx-1.5 bg-gray-400/40" />
@@ -140,7 +144,7 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
           </View>
           
           {!isDetail && (
-            <TouchableOpacity className="w-8 h-8 rounded-xl items-center justify-center bg-gray-200/50 dark:bg-zalo-darkInput/50">
+            <TouchableOpacity className="w-8 h-8 rounded-xl items-center justify-center" style={{ backgroundColor: colors.bgInput }}>
               <MaterialCommunityIcons name="dots-horizontal" size={20} color={colors?.textMuted || '#9ca3af'} />
             </TouchableOpacity>
           )}
@@ -153,11 +157,11 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
             onPress={handleLocationPress} 
             className="px-4 mb-2.5"
           >
-            <View className="flex-row items-center px-3 py-1.5 rounded-2xl self-start gap-1.5 bg-gray-200/60 dark:bg-zalo-darkInput/60">
+            <View className="flex-row items-center px-3 py-1.5 rounded-2xl self-start gap-1.5" style={{ backgroundColor: colors.bgInput }}>
               <Ionicons name="location" size={14} color={colors?.accent || '#0068ff'} />
               <Text 
-                className="text-[13px] font-semibold text-black dark:text-white" 
-                style={{ maxWidth: width * 0.6 }}
+                className="text-[13px] font-semibold" 
+                style={{ maxWidth: width * 0.6, color: colors?.text || '#000' }}
                 numberOfLines={1}
               >
                 {item.location_name}
@@ -197,12 +201,12 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
             intensity={90} 
             tint="systemMaterial"
           >
-            <View className="absolute inset-0 bg-white/70 dark:bg-black/70" />
-            <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-gray-200 dark:bg-zalo-darkInput">
+            <View className="absolute inset-0" style={{ backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)' }} />
+            <View className="w-16 h-16 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.bgInput }}>
               <MaterialCommunityIcons name="eye-off-outline" size={32} color={colors?.text || '#000'} />
             </View>
-            <Text className="text-lg font-extrabold mb-2 text-black dark:text-white">Nội dung nhạy cảm</Text>
-            <Text className="text-sm text-center mb-5 text-gray-500 dark:text-gray-400 leading-5">
+            <Text className="text-lg font-extrabold mb-2" style={{ color: colors?.text || '#000' }}>Nội dung nhạy cảm</Text>
+            <Text className="text-sm text-center mb-5 leading-5" style={{ color: colors?.textSub || '#6b7280' }}>
               Bài viết này bị ẩn vì có thể chứa nội dung không phù hợp.
             </Text>
           </BlurView>
@@ -212,10 +216,10 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
       {/* MUSIC CARD SECTION */}
       {item.music_data && (
         <View className="px-4 mb-4">
-          <View className="flex-row items-center p-2 rounded-2xl border border-white/10 bg-gray-200/50 dark:bg-zalo-darkInput/50">
+          <View className="flex-row items-center p-2 rounded-2xl border border-white/10" style={{ backgroundColor: colors.bgInput }}>
             <Image source={{ uri: item.music_data.cover }} className="w-11 h-11 rounded-xl" />
             <View className="flex-1 ml-3">
-              <Text className="text-sm font-extrabold text-black dark:text-white" numberOfLines={1}>
+              <Text className="text-sm font-extrabold" style={{ color: colors?.text || '#000' }} numberOfLines={1}>
                 {item.music_data.title}
               </Text>
               <Text className="text-xs font-medium text-gray-400 mt-0.5" numberOfLines={1}>
@@ -237,12 +241,12 @@ export default function PostItem({ item, colors, onOpenPreview, onLike, navigati
             count={localLikeCount} 
             colors={colors} 
           />
-          <Text className="text-[13px] font-semibold text-gray-500 dark:text-gray-400">
+          <Text className="text-[13px] font-semibold" style={{ color: colors?.textSub || '#6b7280' }}>
             {item.comment_count > 0 ? `${item.comment_count} bình luận` : ''}
           </Text>
         </View>
 
-        <View className="h-[1px] mx-5 mb-1 bg-gray-200/50 dark:bg-zalo-darkBorder/50" />
+        <View className="h-[1px] mx-5 mb-1" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
 
         <PostActions 
           item={item} 

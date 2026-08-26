@@ -7,111 +7,47 @@ import {
   ScrollView,
   ActivityIndicator,
   Animated,
-  TextInput,
+  RefreshControl,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import ZaloHeader from "@/base/components/ZaloHeader";
 import Avatar from "@/base/components/Avatar";
 import { useTheme } from "@/base/context/ThemeContext";
-import {
-  getAllProfiles,
-  getLatestMessagesForUser,
-  getUserGroups,
-  createGroup,
-} from "@/base/services/messageService";
+import { useConversationsQuery, useCreateGroupMutation, MESSAGE_KEYS } from "@/base/services/queries";
 import { useAuthStore } from "@/base/shared/store/authStore";
 import { supabase } from "@/base/services/supabase";
-
-const formatTime = (dateString) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  const now = new Date();
-  if (date.toDateString() === now.toDateString()) {
-    return date.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
-};
+import ChatItem from "./components/ChatItem";
+import CreateGroupModal from "./components/CreateGroupModal";
 
 export default function MessagesScreen({ navigation }) {
   const { colors } = useTheme();
   const currentUser = useAuthStore((state) => state.user);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [latestMessages, setLatestMessages] = useState({});
-  const [isCreateGroupModalVisible, setCreateGroupModalVisible] =
-    useState(false);
+  const queryClient = useQueryClient();
+
+  const [isCreateGroupModalVisible, setCreateGroupModalVisible] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedFriends, setSelectedFriends] = useState([]);
-  const [friendsList, setFriendsList] = useState([]);
 
   // Notification State & Animation
   const [notification, setNotification] = useState(null);
   const slideAnim = useRef(new Animated.Value(-150)).current;
 
+  // TanStack Query: Fetch Conversations & Friends
+  const { 
+    data = { chats: [], friendsList: [], latestMessages: {} }, 
+    isLoading, 
+    isRefetching, 
+    refetch 
+  } = useConversationsQuery(currentUser?.id);
+
+  const { chats, friendsList, latestMessages } = data;
+  const createGroupMutation = useCreateGroupMutation(currentUser?.id);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!currentUser?.id) return;
-      try {
-        const [usersRes, messagesRes, groupsRes] = await Promise.all([
-          getAllProfiles(),
-          getLatestMessagesForUser(currentUser.id),
-          getUserGroups(currentUser.id),
-        ]);
-
-        let filteredUsers =
-          usersRes.data?.filter((u) => u.id !== currentUser.id) || [];
-        setFriendsList(filteredUsers);
-
-        const userGroups = groupsRes.data?.map((g) => g.groups).filter(Boolean) || [];
-        const latestMsgs = {};
-
-        if (messagesRes.data) {
-          messagesRes.data.forEach((msg) => {
-            const isGroup = msg.conversation_id.length === 36;
-            const otherId = isGroup
-              ? msg.conversation_id
-              : msg.conversation_id.replace(currentUser.id, "").replace(/^-|-$/g, "");
-
-            if (otherId && !latestMsgs[otherId]) {
-              latestMsgs[otherId] = msg;
-            }
-          });
-        }
-        setLatestMessages(latestMsgs);
-
-        const allChats = [
-          ...filteredUsers.map((u) => ({ ...u, isGroup: false })),
-          ...userGroups.map((g) => ({
-            ...g,
-            isGroup: true,
-            id: g.id,
-            full_name: g.name,
-            avatar_url: g.avatar_url || null,
-          })),
-        ];
-
-        allChats.sort((a, b) => {
-          const timeA = latestMsgs[a.id]?.created_at || "1970-01-01";
-          const timeB = latestMsgs[b.id]?.created_at || "1970-01-01";
-          return new Date(timeB) - new Date(timeA);
-        });
-
-        setUsers(allChats);
-      } catch (error) {
-        console.error("Error fetching message list data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-
-    // Listen for Realtime Changes in Messages
+    // Listen for Realtime Changes in Messages and invalidate Query
     const channel = supabase
-      .channel("public:messages")
+      .channel("public:messages_realtime")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
@@ -119,26 +55,15 @@ export default function MessagesScreen({ navigation }) {
           const newMsg = payload.new;
           if (!newMsg) return;
 
+          queryClient.invalidateQueries({ queryKey: MESSAGE_KEYS.conversations(currentUser?.id) });
+
           const isGroup = newMsg.conversation_id.length === 36;
           const targetId = isGroup
             ? newMsg.conversation_id
-            : newMsg.conversation_id.replace(currentUser.id, "").replace(/^-|-$/g, "");
-
-          setLatestMessages((prev) => ({
-            ...prev,
-            [targetId]: newMsg,
-          }));
-
-          setUsers((prevUsers) => {
-            const targetChat = prevUsers.find((u) => u.id === targetId);
-            if (!targetChat) return prevUsers;
-
-            const remaining = prevUsers.filter((u) => u.id !== targetId);
-            return [targetChat, ...remaining];
-          });
+            : newMsg.conversation_id.replace(currentUser?.id, "").replace(/^-|-$/g, "");
 
           // Show floating banner if message is from someone else
-          if (newMsg.sender_id !== currentUser.id) {
+          if (newMsg.sender_id !== currentUser?.id) {
             triggerNotification({
               ...newMsg,
               targetId,
@@ -152,7 +77,7 @@ export default function MessagesScreen({ navigation }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUser]);
+  }, [currentUser, queryClient]);
 
   const triggerNotification = (notifData) => {
     setNotification(notifData);
@@ -188,44 +113,30 @@ export default function MessagesScreen({ navigation }) {
     }
   };
 
-  const handleCreateGroup = async () => {
+  const handleCreateGroup = () => {
     if (!groupName.trim() || selectedFriends.length === 0) return;
-    try {
-      const res = await createGroup(
-        groupName,
-        [...selectedFriends, currentUser.id],
-        currentUser.id
-      );
-      if (res.data) {
-        setUsers((prev) => [
-          {
-            id: res.data.id,
-            full_name: res.data.name,
-            avatar_url: res.data.avatar_url,
-            isGroup: true,
-          },
-          ...prev,
-        ]);
-        setCreateGroupModalVisible(false);
-        setGroupName("");
-        setSelectedFriends([]);
+    createGroupMutation.mutate(
+      { groupName: groupName.trim(), memberIds: selectedFriends },
+      {
+        onSuccess: () => {
+          setCreateGroupModalVisible(false);
+          setGroupName("");
+          setSelectedFriends([]);
+        },
       }
-    } catch (e) {
-      console.error(e);
-    }
+    );
   };
 
   const renderItem = ({ item }) => {
     const latestMsg = latestMessages[item.id];
-    const isUnread =
-      latestMsg &&
-      !latestMsg.is_read &&
-      latestMsg.sender_id !== currentUser?.id;
+    const senderName = latestMsg ? chats.find(u => u.id === latestMsg.sender_id)?.full_name : null;
 
     return (
-      <TouchableOpacity
-        className="flex-row px-4 py-3.5 items-center bg-white dark:bg-zalo-darkCard"
-        activeOpacity={0.65}
+      <ChatItem
+        item={item}
+        latestMsg={latestMsg}
+        currentUserId={currentUser?.id}
+        senderName={senderName}
         onPress={() =>
           navigation.navigate("MessageDetail", {
             conversationId: item.id,
@@ -234,56 +145,12 @@ export default function MessagesScreen({ navigation }) {
             isGroup: item.isGroup,
           })
         }
-      >
-        {/* Avatar */}
-        <View className="relative mr-3.5">
-          <Avatar
-            url={item.avatar_url}
-            name={item.full_name || item.username}
-            size={56}
-            rounded={false}
-          />
-          {/* Online dot */}
-          <View className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white dark:border-zalo-darkCard" />
-        </View>
-
-        {/* Content */}
-        <View className="flex-1">
-          <View className="flex-row justify-between items-center mb-1">
-            <View className="flex-row items-center flex-1 mr-2">
-              <Text
-                className={`text-base text-black dark:text-white flex-1 ${isUnread ? 'font-extrabold' : 'font-bold'}`}
-                numberOfLines={1}
-              >
-                {item.full_name || item.username}
-              </Text>
-            </View>
-            <Text
-              className={`text-xs ${isUnread ? 'text-zalo-blue font-semibold' : 'text-gray-400'}`}
-            >
-              {latestMsg ? formatTime(latestMsg.created_at) : "-"}
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text
-              className={`text-sm flex-1 mr-2 ${isUnread ? 'text-black dark:text-white font-semibold' : 'text-gray-500 dark:text-gray-400'}`}
-              numberOfLines={1}
-            >
-              {latestMsg
-                ? latestMsg.sender_id === currentUser?.id
-                  ? `Bạn: ${latestMsg.content} ${latestMsg.is_read ? '· Đã xem' : ''}`
-                  : `${users.find(u => u.id === latestMsg.sender_id)?.full_name || item.full_name || item.username || 'Ai đó'}: ${latestMsg.content}`
-                : "Chưa có tin nhắn..."}
-            </Text>
-            {isUnread && <View className="w-2.5 h-2.5 rounded-full bg-red-500" />}
-          </View>
-        </View>
-      </TouchableOpacity>
+      />
     );
   };
 
   return (
-    <View className="flex-1 bg-[#f2f2f7] dark:bg-black">
+    <View className="flex-1" style={{ backgroundColor: colors.bg }}>
       <ZaloHeader
         rightIcons={[
           {
@@ -315,11 +182,12 @@ export default function MessagesScreen({ navigation }) {
           style={{ transform: [{ translateY: slideAnim }] }}
         >
           <TouchableOpacity
-            className="bg-white dark:bg-zalo-darkCard rounded-2xl p-3 flex-row items-center shadow-lg border border-black/5"
+            className="rounded-2xl p-3 flex-row items-center shadow-lg border border-black/5"
+            style={{ backgroundColor: colors.bgCard }}
             activeOpacity={0.8}
             onPress={() => {
               closeNotification();
-              const targetChat = users.find((u) => u.id === notification.targetId);
+              const targetChat = chats.find((u) => u.id === notification.targetId);
               if (targetChat) {
                 navigation.navigate("MessageDetail", {
                   conversationId: targetChat.id,
@@ -331,8 +199,8 @@ export default function MessagesScreen({ navigation }) {
             }}
           >
             {(() => {
-              const senderUser = users.find((u) => u.id === notification.sender_id);
-              const targetChat = users.find((u) => u.id === notification.targetId);
+              const senderUser = chats.find((u) => u.id === notification.sender_id);
+              const targetChat = chats.find((u) => u.id === notification.targetId);
 
               const title = notification.isGroup
                 ? `${senderUser?.full_name || senderUser?.username || "Ai đó"} trong ${targetChat?.full_name || targetChat?.username || "Nhóm"}`
@@ -348,10 +216,10 @@ export default function MessagesScreen({ navigation }) {
                     className="mr-3"
                   />
                   <View className="flex-1">
-                    <Text className="text-black dark:text-white font-bold text-[15px] mb-0.5" numberOfLines={1}>
+                    <Text className="font-bold text-[15px] mb-0.5" style={{ color: colors.text }} numberOfLines={1}>
                       {title}
                     </Text>
-                    <Text className="text-gray-500 dark:text-gray-400 text-sm" numberOfLines={1}>
+                    <Text className="text-sm" style={{ color: colors.textSub }} numberOfLines={1}>
                       {notification.content}
                     </Text>
                   </View>
@@ -372,16 +240,11 @@ export default function MessagesScreen({ navigation }) {
           {["Tất cả", "Chưa đọc", "Nhóm", "OA"].map((label, i) => (
             <TouchableOpacity
               key={label}
-              className={`px-4 py-2 rounded-full shadow-sm ${
-                i === 0 ? 'bg-zalo-blue' : 'bg-white dark:bg-zalo-darkCard'
-              }`}
+              className={`px-4 py-2 rounded-full shadow-sm`}
+              style={i === 0 ? { backgroundColor: '#0068ff' } : { backgroundColor: colors.bgCard }}
               activeOpacity={0.7}
             >
-              <Text
-                className={`text-sm font-medium ${
-                  i === 0 ? 'text-white font-semibold' : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
+              <Text style={{ color: i === 0 ? 'white' : colors.textSub, fontSize: 14, fontWeight: '500' }}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -392,9 +255,17 @@ export default function MessagesScreen({ navigation }) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16, marginTop: 2, paddingBottom: 110 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors?.accent || '#0068ff'}
+            colors={[colors?.accent || '#0068ff']}
+          />
+        }
       >
-        <View className="bg-white dark:bg-zalo-darkCard rounded-3xl shadow-sm overflow-hidden py-1">
-          {loading ? (
+        <View className="rounded-3xl shadow-sm overflow-hidden py-1" style={{ backgroundColor: colors.bgCard }}>
+          {isLoading ? (
             <ActivityIndicator
               size="large"
               color={colors?.accent || '#0068ff'}
@@ -402,77 +273,30 @@ export default function MessagesScreen({ navigation }) {
             />
           ) : (
             <FlatList
-              data={users}
+              data={chats}
               keyExtractor={(item) => item.id}
               renderItem={renderItem}
               scrollEnabled={false}
               extraData={latestMessages}
-              ItemSeparatorComponent={() => <View className="h-[1px] bg-gray-200 dark:bg-zalo-darkBorder ml-[86px]" />}
+              ItemSeparatorComponent={() => <View className="h-[1px] ml-[86px]" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />}
             />
           )}
         </View>
       </ScrollView>
 
-      {/* Create Group Modal */}
-      {isCreateGroupModalVisible && (
-        <View className="absolute inset-0 bg-black/50 justify-center items-center z-50">
-          <View className="w-[85%] bg-white dark:bg-zalo-darkCard rounded-2xl p-5 max-h-[80%]">
-            <Text className="text-lg font-bold text-black dark:text-white mb-3">Tạo nhóm mới</Text>
-            <TextInput
-              className="bg-gray-200 dark:bg-zalo-darkInput rounded-lg px-3 py-2.5 text-black dark:text-white mb-4"
-              placeholder="Tên nhóm..."
-              placeholderTextColor={colors?.textMuted || '#9ca3af'}
-              value={groupName}
-              onChangeText={setGroupName}
-            />
-            <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Chọn thành viên:</Text>
-            <ScrollView className="max-h-[300px] mb-4">
-              {friendsList.map((f) => (
-                <TouchableOpacity
-                  key={f.id}
-                  className="flex-row items-center py-2"
-                  onPress={() => toggleFriendSelect(f.id)}
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      selectedFriends.includes(f.id)
-                        ? "checkbox-marked-circle"
-                        : "checkbox-blank-circle-outline"
-                    }
-                    size={24}
-                    color={
-                      selectedFriends.includes(f.id)
-                        ? (colors?.accent || '#0068ff')
-                        : (colors?.border || '#e5e7eb')
-                    }
-                  />
-                  <Avatar
-                    url={f.avatar_url}
-                    name={f.full_name || f.username}
-                    size={36}
-                    className="mx-3"
-                  />
-                  <Text className="text-base text-black dark:text-white">{f.full_name || f.username}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <View className="flex-row justify-end gap-3">
-              <TouchableOpacity
-                className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-zalo-darkInput"
-                onPress={() => setCreateGroupModalVisible(false)}
-              >
-                <Text className="text-black dark:text-white font-semibold">Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="px-4 py-2 rounded-lg bg-zalo-blue"
-                onPress={handleCreateGroup}
-              >
-                <Text className="text-white font-semibold">Tạo</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
+      {/* Create Group Modal Component */}
+      <CreateGroupModal
+        visible={isCreateGroupModalVisible}
+        onClose={() => setCreateGroupModalVisible(false)}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        friendsList={friendsList}
+        selectedFriends={selectedFriends}
+        toggleFriendSelect={toggleFriendSelect}
+        onSubmit={handleCreateGroup}
+        isPending={createGroupMutation.isPending}
+        colors={colors}
+      />
     </View>
   );
 }

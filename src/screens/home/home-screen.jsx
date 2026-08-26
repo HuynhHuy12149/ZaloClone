@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, RefreshControl, ActivityIndicator,
-  TouchableOpacity, ScrollView, Dimensions,
   LayoutAnimation, Platform, UIManager
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { getPosts, toggleLike } from '@/base/services/postService';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePostsQuery, useToggleLikeMutation, POST_KEYS } from '@/base/services/queries';
 import { supabase } from '@/base/services/supabase';
 import ZaloHeader from '@/base/components/ZaloHeader';
 import AnimatedTabBar from '@/base/components/AnimatedTabBar';
 import { useTheme } from '@/base/context/ThemeContext';
+import { useLanguage } from '@/base/context/LanguageContext';
 import { useAuthStore } from '@/base/shared/store/authStore';
 import PostItem from './components/diary/PostItem';
 import ImagePreviewModal from './components/diary/ImagePreviewModal';
-import Avatar from '@/base/components/Avatar';
+import StoryBar from './components/StoryBar';
+import PostComposerBar from './components/PostComposerBar';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -21,50 +23,35 @@ if (Platform.OS === 'android') {
   }
 }
 
-const { width } = Dimensions.get('window');
-
-const STORIES = [
-  { id: 'add', label: 'Tạo mới', isAdd: true },
-  { id: 's1', label: 'Lan Anh' },
-  { id: 's2', label: 'Sơn Núi' },
-  { id: 's3', label: 'Annnnn' },
-  { id: 's4', label: 'Kiệt Vip' },
-];
-
 export default function HomeScreen({ navigation }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [previewData, setPreviewData] = useState({ visible: false, images: [], index: 0, post: null });
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const user = useAuthStore(state => state.user);
+  const queryClient = useQueryClient();
 
-  const fetchPosts = async () => {
-    const response = await getPosts();
-    if (response.success) setPosts(response.data);
-    setLoading(false);
-    setRefreshing(false);
-  };
+  // TanStack Query: Fetch Posts with automatic caching
+  const { data: posts = [], isLoading, isRefetching, refetch } = usePostsQuery();
+  const toggleLikeMutation = useToggleLikeMutation();
 
+  // Realtime Supabase subscription: Invalidate Query on any DB changes
   useEffect(() => {
-    fetchPosts();
-    const channelId = `posts_${Math.random().toString(36).substring(7)}`;
+    const channelId = `posts_feed_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
       .channel(channelId)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchPosts)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
-        setPosts(currentPosts => 
-          currentPosts.map(post => 
-            post.id === payload.new.id 
-              ? { ...post, moderation_status: payload.new.moderation_status } 
-              : post
-          )
-        );
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+        queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, () => {
+        queryClient.invalidateQueries({ queryKey: POST_KEYS.all });
       })
       .subscribe();
-    return () => { if (channel) supabase.removeChannel(channel); };
-  }, []);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const handleTabChange = (index) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -73,61 +60,21 @@ export default function HomeScreen({ navigation }) {
 
   const renderHeader = () => (
     <View className="px-3 mb-4 mt-3">
-      {/* Post composer */}
-      <TouchableOpacity
-        className="flex-row items-center bg-white dark:bg-zalo-darkCard rounded-[32px] px-3 py-2.5 mb-4 shadow-sm"
-        style={{ elevation: 1 }}
+      <PostComposerBar
+        user={user}
+        colors={colors}
+        placeholder={t('home.whatsOnYourMind')}
         onPress={() => navigation.navigate('CreatePost')}
-        activeOpacity={0.8}
-      >
-        <Avatar
-          url={user?.avatar_url}
-          name={user?.full_name}
-          size={44}
-          rounded={false}
-        />
-        <View className="flex-1 ml-3">
-          <Text className="text-[15px] text-gray-400 dark:text-gray-500 font-semibold">Hôm nay bạn thế nào?</Text>
-        </View>
-        <View className="w-10 h-10 rounded-2xl items-center justify-center bg-zalo-blue/15">
-          <Ionicons name="image" size={20} color={colors?.accent || '#0068ff'} />
-        </View>
-      </TouchableOpacity>
-
-      {/* Stories */}
-      <View 
-        className="bg-white dark:bg-zalo-darkCard rounded-[32px] py-4 shadow-sm"
-        style={{ elevation: 1 }}
-      >
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
-          {STORIES.map((story) => (
-            <View key={story.id} className="items-center w-16">
-              <View 
-                className="p-0.5 rounded-3xl border-2 mb-2"
-                style={{ borderColor: story.isAdd ? 'transparent' : (colors?.storyBorder || colors?.accent || '#0068ff') }}
-              >
-                {story.isAdd ? (
-                  <View className="w-14 h-14 rounded-2xl bg-gray-200 dark:bg-zalo-darkInput items-center justify-center">
-                    <View className="w-6 h-6 rounded-full bg-zalo-blue items-center justify-center">
-                      <Ionicons name="add" size={18} color="#fff" />
-                    </View>
-                  </View>
-                ) : (
-                  <Avatar url={null} name={story.label} size={54} rounded={false} />
-                )}
-              </View>
-              <Text className="text-[11px] font-bold text-center text-black dark:text-white" numberOfLines={1}>
-                {story.label}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
+      />
+      <StoryBar
+        colors={colors}
+        onAddStory={() => navigation.navigate('CreatePost')}
+      />
     </View>
   );
 
-  const handleLike = async (postId) => {
-    await toggleLike(postId);
+  const handleLike = (postId, reactionType) => {
+    toggleLikeMutation.mutate({ postId, reactionType });
   };
 
   const openPreview = (post, index) => {
@@ -139,10 +86,6 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  const updatePost = (updatedPost) => {
-    setPosts(prev => prev.map(p => p.id === updatedPost.id ? { ...p, ...updatedPost } : p));
-  };
-
   const renderItem = ({ item }) => (
     <PostItem 
       item={item} 
@@ -150,13 +93,14 @@ export default function HomeScreen({ navigation }) {
       onOpenPreview={openPreview} 
       onLike={handleLike} 
       navigation={navigation}
-      onPress={() => navigation.navigate('PostDetail', { post: item, onUpdatePost: updatePost })}
+      onPress={() => navigation.navigate('PostDetail', { post: item })}
     />
   );
 
   return (
-    <View className="flex-1 bg-[#f2f2f7] dark:bg-black">
+    <View className="flex-1" style={{ backgroundColor: colors.bg }}>
       <ZaloHeader
+        placeholder={t('common.search')}
         rightIcons={[
           { component: <MaterialCommunityIcons name="pencil-box-outline" size={24} color={colors?.iconAction || '#374151'} />, onPress: () => navigation.navigate('CreatePost') },
           { component: <Ionicons name="notifications-outline" size={24} color={colors?.iconAction || '#374151'} /> },
@@ -165,12 +109,12 @@ export default function HomeScreen({ navigation }) {
 
       {/* Sub-tabs pinned at the top */}
       <AnimatedTabBar
-        tabs={['Nhật Ký', 'Zalo Video']}
+        tabs={[t('home.diaryTab'), t('home.zaloVideoTab')]}
         active={activeTab}
         onChange={handleTabChange}
       />
 
-      {loading ? (
+      {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors?.accent || '#0068ff'} />
         </View>
@@ -184,17 +128,17 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={{ paddingBottom: 100, paddingTop: 12 }}
           ListEmptyComponent={
             <View className="pt-20 items-center">
-              <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-gray-200 dark:bg-zalo-darkInput">
+              <View className="w-16 h-16 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.bgInput }}>
                 <MaterialCommunityIcons name="post-outline" size={32} color={colors?.textMuted || '#9ca3af'} />
               </View>
-              <Text className="text-[17px] font-extrabold text-black dark:text-white">Chưa có bài viết nào</Text>
-              <Text className="text-sm mt-1 text-gray-500 dark:text-gray-400">Hãy là người đăng bài đầu tiên 🚀</Text>
+              <Text className="text-[17px] font-extrabold" style={{ color: colors.text }}>{t('home.noPosts')}</Text>
+              <Text className="text-sm mt-1" style={{ color: colors.textSub }}>{t('home.beTheFirstPost')}</Text>
             </View>
           }
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); fetchPosts(); }}
+              refreshing={isRefetching}
+              onRefresh={refetch}
               tintColor={colors?.accent || '#0068ff'}
               colors={[colors?.accent || '#0068ff']}
             />
@@ -204,8 +148,8 @@ export default function HomeScreen({ navigation }) {
       ) : (
         <View className="pt-20 items-center">
           <MaterialCommunityIcons name="play-circle-outline" size={64} color={colors?.iconSub || '#9ca3af'} />
-          <Text className="text-lg font-bold text-black dark:text-white mt-2">Zalo Video</Text>
-          <Text className="text-sm mt-1 text-gray-500 dark:text-gray-400">Khám phá video ngắn thú vị</Text>
+          <Text className="text-lg font-bold mt-2" style={{ color: colors.text }}>{t('home.zaloVideoTab')}</Text>
+          <Text className="text-sm mt-1" style={{ color: colors.textSub }}>Khám phá video ngắn thú vị</Text>
         </View>
       )}
 

@@ -28,11 +28,11 @@ export default function DiscoverScreen() {
   const renderCardGroup = (title, data) => (
     <View className="mt-2">
       <View className="px-6 py-2">
-        <Text className="text-[13px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <Text className="text-[13px] font-extrabold uppercase tracking-wider" style={{ color: colors?.textSub || '#6b7280' }}>
           {title}
         </Text>
       </View>
-      <View className="bg-white dark:bg-zalo-darkCard rounded-3xl mx-4 py-1 shadow-sm">
+      <View className="rounded-3xl mx-4 py-1 shadow-sm" style={{ backgroundColor: colors.bgCard }}>
         {data.map((item, index) => (
           <View key={item.id}>
             <TouchableOpacity className="flex-row items-center px-4 py-3" activeOpacity={0.7}>
@@ -46,9 +46,9 @@ export default function DiscoverScreen() {
                 }
               </View>
               <View className="flex-1 ml-3.5">
-                <Text className="text-base font-semibold text-black dark:text-white">{item.title}</Text>
+                <Text className="text-base font-semibold" style={{ color: colors?.text || '#000' }}>{item.title}</Text>
                 {item.desc && (
-                  <Text className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5" numberOfLines={1}>
+                  <Text className="text-[13px] mt-0.5" style={{ color: colors?.textSub || '#6b7280' }} numberOfLines={1}>
                     {item.desc}
                   </Text>
                 )}
@@ -64,7 +64,7 @@ export default function DiscoverScreen() {
               <Entypo name="chevron-small-right" size={22} color={colors?.iconSub || '#9ca3af'} />
             </TouchableOpacity>
             {index < data.length - 1 && (
-              <View className="h-[1px] bg-gray-200 dark:bg-zalo-darkBorder ml-20" />
+              <View className="h-[1px] ml-20" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
             )}
           </View>
         ))}
@@ -73,7 +73,7 @@ export default function DiscoverScreen() {
   );
 
   return (
-    <View className="flex-1 bg-[#f2f2f7] dark:bg-black">
+    <View className="flex-1" style={{ backgroundColor: colors.bg }}>
       <ZaloHeader
         placeholder="Khám phá dịch vụ"
         rightIcons={[

@@ -129,17 +129,18 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
   }, [search]);
 
   const renderItem = ({ item }) => (
-    <View className="flex-row items-center py-3 border-b border-gray-200/20 dark:border-zalo-darkBorder/20">
+    <View className="flex-row items-center py-3 border-b" style={{ borderBottomColor: colors?.border || '#e5e7eb' }}>
       <Image source={{ uri: item.cover }} className="w-[52px] h-[52px] rounded-xl mr-3" />
       <View className="flex-1">
-        <Text className="text-[15px] font-bold text-black dark:text-white mb-0.5" numberOfLines={1}>{item.title}</Text>
+        <Text className="text-[15px] font-bold mb-0.5" style={{ color: colors?.text || '#000' }} numberOfLines={1}>{item.title}</Text>
         <Text className="text-[13px] text-gray-400">{item.artist}</Text>
       </View>
 
       <View className="flex-row items-center gap-2">
         <TouchableOpacity
           onPress={() => playPreview(item.preview, item.id)}
-          className="w-9 h-9 rounded-full items-center justify-center bg-gray-200 dark:bg-zalo-darkInput"
+          className="w-9 h-9 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.bgInput }}
         >
           <Ionicons
             name={playingId === item.id ? "pause" : "play"}
@@ -180,23 +181,24 @@ const MusicPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            className="rounded-t-[32px] pt-3 bg-white dark:bg-zalo-darkCard"
-            style={{ height: SCREEN_HEIGHT * 0.85 }}
+            className="rounded-t-[32px] pt-3"
+            style={{ height: SCREEN_HEIGHT * 0.85, backgroundColor: colors.bgCard }}
           >
-            <View className="w-10 h-1 rounded-full self-center mb-3 bg-gray-300 dark:bg-zalo-darkBorder" />
+            <View className="w-10 h-1 rounded-full self-center mb-3" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
 
             <View className="flex-row items-center justify-center px-5 mb-4 relative">
-              <Text className="text-lg font-extrabold text-black dark:text-white">Tìm nhạc</Text>
+              <Text className="text-lg font-extrabold" style={{ color: colors?.text || '#000' }}>Tìm nhạc</Text>
               <TouchableOpacity onPress={hide} className="absolute right-5">
                 <Ionicons name="close-circle" size={24} color={colors?.textMuted || '#9ca3af'} />
               </TouchableOpacity>
             </View>
 
             <View className="px-4 mb-4">
-              <View className="flex-row items-center rounded-full h-11 bg-gray-200 dark:bg-zalo-darkInput">
+              <View className="flex-row items-center rounded-full h-11" style={{ backgroundColor: colors.bgInput }}>
                 <Ionicons name="search" size={20} color={colors?.textMuted || '#9ca3af'} style={{ marginLeft: 12 }} />
                 <TextInput
-                  className="flex-1 px-2.5 text-[15px] text-black dark:text-white"
+                  className="flex-1 px-2.5 text-[15px]"
+                  style={{ color: colors?.text || '#000' }}
                   placeholder="Bài hát, ca sĩ bạn yêu thích..."
                   placeholderTextColor={colors?.textPlaceholder || '#9ca3af'}
                   value={search}

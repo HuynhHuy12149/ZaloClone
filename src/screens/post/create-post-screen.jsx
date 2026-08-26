@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Alert,
+  View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, Platform, Keyboard, Image,
   ScrollView
 } from 'react-native';
@@ -8,12 +8,12 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5, Entypo } from '@expo/ve
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { createPost } from '@/base/services/postService';
+import { useCreatePostMutation } from '@/base/services/queries';
 import { useTheme } from '@/base/context/ThemeContext';
 import { useAuthStore } from '@/base/shared/store/authStore';
 import { uploadImageToCloudinary } from '@/base/services/cloudinary';
 import { compressImage } from '@/base/shared/utils/imageUtils';
+import { showToast } from '@/base/shared/utils/toast';
 import LocationPickerModal from '@/base/components/modals/LocationPickerModal';
 import PrivacyPickerSheet from '@/base/components/modals/PrivacyPickerSheet';
 import MusicPickerModal from '@/base/components/modals/MusicPickerModal';
@@ -24,6 +24,7 @@ import EmojiPickerModal from '@/base/components/modals/EmojiPickerModal';
 import MenuControl from '@/base/components/MenuControl';
 
 export default function CreatePostScreen({ navigation }) {
+  const createPostMutation = useCreatePostMutation();
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]);
   const [privacy, setPrivacy] = useState(PostPrivacy.FRIENDS);
@@ -140,11 +141,24 @@ export default function CreatePostScreen({ navigation }) {
         const uploadPromises = compressedImages.map(uri => uploadImageToCloudinary(uri));
         uploadedUrls.push(...(await Promise.all(uploadPromises)));
       }
-      const response = await createPost(content, uploadedUrls, selectedLocation, privacy, selectedMusic, taggedFriends, selectedFontStyle, selectedColor);
-      if (response.success) navigation.goBack();
-      else Alert.alert('Lỗi', response.message || 'Đăng bài thất bại');
+      const response = await createPostMutation.mutateAsync({
+        content,
+        mediaUrls: uploadedUrls,
+        location: selectedLocation,
+        privacy,
+        music: selectedMusic,
+        taggedFriends,
+        fontStyle: selectedFontStyle,
+        color: selectedColor
+      });
+      if (response.success) {
+        showToast.success('Thành công', 'Đăng bài viết thành công!');
+        navigation.goBack();
+      } else {
+        showToast.error('Lỗi', response.message || 'Đăng bài thất bại');
+      }
     } catch (error) {
-      Alert.alert('Lỗi', 'Đã có lỗi xảy ra');
+      showToast.error('Lỗi', 'Đã có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
@@ -204,26 +218,26 @@ export default function CreatePostScreen({ navigation }) {
 
   const renderTaggedFriendsText = () => {
     if (taggedFriends.length === 0) return null;
-    if (taggedFriends.length === 1) return <Text className="text-sm text-gray-400"> — cùng với <Text className="font-bold text-black dark:text-white">{taggedFriends[0].full_name}</Text></Text>;
+    if (taggedFriends.length === 1) return <Text className="text-sm text-gray-400"> — cùng với <Text className="font-bold" style={{ color: colors?.text || '#000' }}>{taggedFriends[0].full_name}</Text></Text>;
     return (
-      <Text className="text-sm text-gray-400"> - với <Text className="font-bold text-black dark:text-white">{taggedFriends[0].full_name}</Text> và <Text className="font-bold text-black dark:text-white">{taggedFriends.length - 1} người khác</Text></Text>
+      <Text className="text-sm text-gray-400"> - với <Text className="font-bold" style={{ color: colors?.text || '#000' }}>{taggedFriends[0].full_name}</Text> và <Text className="font-bold" style={{ color: colors?.text || '#000' }}>{taggedFriends.length - 1} người khác</Text></Text>
     );
   };
 
   return (
-    <BottomSheetModalProvider>
-      <View className="flex-1 bg-white dark:bg-zalo-darkCard" style={{ paddingTop: insets.top }}>
+      <View className="flex-1" style={{ paddingTop: insets.top, backgroundColor: colors.bgCard }}>
         <View className="flex-row items-center justify-between px-3 py-2.5">
           <View className="flex-row items-center gap-2.5">
             <TouchableOpacity className="p-1" onPress={() => navigation.goBack()} hitSlop={8}>
               <Ionicons name="close" size={26} color={colors?.text || '#000'} />
             </TouchableOpacity>
             <TouchableOpacity 
-              className="flex-row items-center gap-1 bg-gray-200 dark:bg-zalo-darkInput px-3 py-1.5 rounded-full" 
+              className="flex-row items-center gap-1 px-3 py-1.5 rounded-full" 
+              style={{ backgroundColor: colors.bgInput }}
               onPress={() => privacySheetRef.current?.present()}
             >
               <FontAwesome5 name="users" size={11} color={colors?.textSub || '#6b7280'} />
-              <Text className="text-[13px] font-medium text-black dark:text-white">{PrivacyLabels[privacy]}</Text>
+              <Text className="text-[13px] font-medium" style={{ color: colors?.text || '#000' }}>{PrivacyLabels[privacy]}</Text>
               <Entypo name="chevron-small-down" size={16} color={colors?.textSub || '#6b7280'} />
             </TouchableOpacity>
           </View>
@@ -237,9 +251,8 @@ export default function CreatePostScreen({ navigation }) {
               <Text className="text-white font-extrabold text-xs">Aa</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              className={`px-4 py-1.5 rounded-full min-w-[60px] items-center ${
-                canPost ? 'bg-zalo-blue' : 'bg-gray-200 dark:bg-zalo-darkInput'
-              }`}
+              className={`px-4 py-1.5 rounded-full min-w-[60px] items-center`}
+              style={canPost ? { backgroundColor: '#0068ff' } : { backgroundColor: colors.bgInput }}
               onPress={handlePost} 
               disabled={loading || !canPost}
             >
@@ -259,7 +272,7 @@ export default function CreatePostScreen({ navigation }) {
             <Avatar url={user?.avatar_url} name={user?.full_name} size={46} />
             <View className="flex-1">
               <View className="flex-row flex-wrap items-center">
-                <Text className="text-base font-bold text-black dark:text-white">{user?.full_name || 'Người dùng Zalo'}</Text>
+                <Text className="text-base font-bold" style={{ color: colors?.text || '#000' }}>{user?.full_name || 'Người dùng Zalo'}</Text>
                 {renderTaggedFriendsText()}
               </View>
               <View className="flex-row items-center mt-1">
@@ -286,7 +299,7 @@ export default function CreatePostScreen({ navigation }) {
           </View>
 
           <TextInput
-            className="text-lg leading-[26px] min-h-[80px] mb-4 text-black dark:text-white"
+            className="text-lg leading-[26px] min-h-[80px] mb-4"
             style={[
               {
                 fontFamily: FONT_STYLES.find(f => f.id === selectedFontStyle)?.fontFamily || 'System',
@@ -308,7 +321,7 @@ export default function CreatePostScreen({ navigation }) {
           {images.length > 0 && (
             <View className="flex-row flex-wrap justify-between gap-y-2.5 mt-2.5 mb-4">
               {images.map((uri, idx) => (
-                <View key={idx} className="w-[48.5%] aspect-square relative rounded-2xl overflow-hidden bg-gray-200 dark:bg-zalo-darkInput">
+                <View key={idx} className="w-[48.5%] aspect-square relative rounded-2xl overflow-hidden" style={{ backgroundColor: colors.bgInput }}>
                   <Image source={{ uri }} className="w-full h-full" />
                   <TouchableOpacity 
                     className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 items-center justify-center" 
@@ -323,7 +336,7 @@ export default function CreatePostScreen({ navigation }) {
 
           {selectedMusic && (
             <View className="mt-2.5 mb-5">
-              <View className="flex-row items-center justify-between p-2.5 rounded-2xl bg-gray-200 dark:bg-zalo-darkInput">
+              <View className="flex-row items-center justify-between p-2.5 rounded-2xl" style={{ backgroundColor: colors.bgInput }}>
                 <View className="flex-row items-center flex-1">
                   <TouchableOpacity className="w-10 h-10 relative" onPress={togglePlayMusic} activeOpacity={0.8}>
                     <Image source={{ uri: selectedMusic.cover }} className="w-10 h-10 rounded-lg" />
@@ -332,7 +345,7 @@ export default function CreatePostScreen({ navigation }) {
                     </View>
                   </TouchableOpacity>
                   <View className="ml-3 flex-1">
-                    <Text className="text-sm font-bold text-black dark:text-white" numberOfLines={1}>{selectedMusic.title}</Text>
+                    <Text className="text-sm font-bold" style={{ color: colors?.text || '#000' }} numberOfLines={1}>{selectedMusic.title}</Text>
                     <Text className="text-xs text-gray-400 mt-0.5" numberOfLines={1}>{selectedMusic.artist}</Text>
                   </View>
                 </View>
@@ -345,15 +358,16 @@ export default function CreatePostScreen({ navigation }) {
         </ScrollView>
 
         <View 
-          className="bg-white dark:bg-zalo-darkCard rounded-t-3xl shadow-sm" 
-          style={{ paddingBottom: getBottomPadding() }}
+          className="rounded-t-3xl shadow-sm" 
+          style={{ paddingBottom: getBottomPadding(), backgroundColor: colors.bgCard }}
         >
           <View className="pt-3 pb-1">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} keyboardShouldPersistTaps="handled">
               {MEDIA_OPTS.map((opt) => (
                 <TouchableOpacity 
                   key={opt.label} 
-                  className="flex-row items-center gap-1.5 px-3.5 py-2 rounded-full bg-gray-200 dark:bg-zalo-darkInput mr-2.5" 
+                  className="flex-row items-center gap-1.5 px-3.5 py-2 rounded-full mr-2.5" 
+                  style={{ backgroundColor: colors.bgInput }}
                   onPress={opt.onPress}
                 >
                   {opt.lib === 'mci' ? <MaterialCommunityIcons name={opt.icon} size={18} color={opt.color} /> : <Ionicons name={opt.icon} size={18} color={opt.color} />}
@@ -389,13 +403,12 @@ export default function CreatePostScreen({ navigation }) {
 
         {loading && (
           <View className="absolute inset-0 bg-black/50 items-center justify-center z-50">
-            <View className="bg-white dark:bg-zalo-darkCard rounded-3xl p-6 items-center gap-3">
+            <View className="rounded-3xl p-6 items-center gap-3" style={{ backgroundColor: colors.bgCard }}>
               <ActivityIndicator size="large" color={colors?.accent || '#0068ff'} />
-              <Text className="text-[15px] font-semibold text-black dark:text-white">Đang đăng bài...</Text>
+              <Text className="text-[15px] font-semibold" style={{ color: colors?.text || '#000' }}>Đang đăng bài...</Text>
             </View>
           </View>
         )}
       </View>
-    </BottomSheetModalProvider>
   );
 }

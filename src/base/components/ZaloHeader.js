@@ -25,8 +25,8 @@ export default function ZaloHeader({
 
   return (
     <View 
-      className="bg-white dark:bg-zalo-darkCard pb-3 z-10"
-      style={{ paddingTop: insets.top + 8 }}
+      className="pb-3 z-10"
+      style={{ paddingTop: insets.top + 8, backgroundColor: colors.bgHeader }}
     >
       <View className="flex-row items-center px-4 h-14">
         {!title && (
@@ -39,15 +39,16 @@ export default function ZaloHeader({
           </TouchableOpacity>
         )}
         {title ? (
-          <Text className="flex-1 text-xl font-bold text-black dark:text-white">{title}</Text>
+          <Text className="flex-1 text-xl font-bold" style={{ color: colors?.headerText || colors?.text || '#000' }}>{title}</Text>
         ) : (
           <TouchableOpacity 
-            className="flex-1 flex-row items-center bg-gray-200 dark:bg-zalo-darkInput rounded-full px-4 h-11 gap-2.5" 
+            className="flex-1 flex-row items-center rounded-full px-4 h-11 gap-2.5" 
+            style={{ backgroundColor: colors.bgInput }}
             onPress={onSearchPress} 
             activeOpacity={0.8}
           >
             <Ionicons name="search" size={20} color={colors.searchText} />
-            <Text className="text-base text-gray-500 dark:text-gray-400 font-medium">{placeholder}</Text>
+            <Text className="text-base font-medium" style={{ color: colors?.searchText || colors?.textSub || '#9ca3af' }}>{placeholder}</Text>
           </TouchableOpacity>
         )}
 
@@ -55,7 +56,8 @@ export default function ZaloHeader({
           {rightIcons.map((icon, index) => (
             <TouchableOpacity 
               key={index} 
-              className="p-1.5 ml-1.5 bg-gray-200 dark:bg-zalo-darkInput rounded-full" 
+              className="p-1.5 ml-1.5 rounded-full" 
+              style={{ backgroundColor: colors.bgInput }}
               onPress={icon.onPress}
             >
               {icon.component}

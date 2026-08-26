@@ -92,16 +92,17 @@ const EmojiPickerModal = forwardRef(({ onSelect }, ref) => {
         </TouchableWithoutFeedback>
 
         <Animated.View
-          className="rounded-t-3xl bg-white dark:bg-zalo-darkCard"
+          className="rounded-t-3xl"
           style={{
             height: SCREEN_HEIGHT * 0.4,
             transform: [{ translateY: sheetTranslateY }],
-            paddingBottom: insets.bottom + 20
+            paddingBottom: insets.bottom + 20,
+            backgroundColor: colors.bgCard
           }}
         >
-          <View className="w-10 h-1 rounded-full self-center my-2.5 bg-gray-300 dark:bg-zalo-darkBorder" />
+          <View className="w-10 h-1 rounded-full self-center my-2.5" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
           <View className="flex-row justify-between items-center px-5 py-2.5">
-            <Text className="text-base font-bold text-black dark:text-white">Biểu tượng cảm xúc</Text>
+            <Text className="text-base font-bold" style={{ color: colors?.text || '#000' }}>Biểu tượng cảm xúc</Text>
             <TouchableOpacity onPress={hide} hitSlop={10}>
               <Text className="font-semibold text-zalo-blue">Đóng</Text>
             </TouchableOpacity>

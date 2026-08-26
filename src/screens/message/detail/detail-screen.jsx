@@ -6,10 +6,19 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/base/context/ThemeContext';
-import { getMessages, sendMessage, markMessagesAsRead, addMemberToGroup, getAllProfiles } from '@/base/services/messageService';
+import { 
+  useMessagesQuery, 
+  useSendMessageMutation, 
+  useProfilesQuery,
+  useAddMemberToGroupMutation,
+  useMarkMessagesAsReadMutation,
+  MESSAGE_KEYS 
+} from '@/base/services/queries';
 import { useAuthStore } from '@/base/shared/store/authStore';
 import { supabase } from '@/base/services/supabase';
+import { showToast } from '@/base/shared/utils/toast';
 import ChatInput from './chat-input';
 import Avatar from '@/base/components/Avatar';
 
@@ -17,17 +26,12 @@ export default function MessageDetailScreen({ route, navigation }) {
   const { colors } = useTheme();
   const currentUser = useAuthStore(state => state.user);
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const { conversationId, chatName, avatar, isGroup } = route?.params || {};
   const chatRoomId = isGroup ? conversationId : [currentUser?.id, conversationId].sort().join('-');
 
-  const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const limit = 10;
   const flatListRef = useRef(null);
 
   const [typingUsers, setTypingUsers] = useState({});
@@ -36,33 +40,34 @@ export default function MessageDetailScreen({ route, navigation }) {
   const lastTypingTime = useRef(0);
 
   const [showAddMember, setShowAddMember] = useState(false);
-  const [friendsList, setFriendsList] = useState([]);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
 
-  useEffect(() => {
-    if (showAddMember && friendsList.length === 0) {
-      getAllProfiles().then(res => {
-        if (res.data) setFriendsList(res.data.filter(u => u.id !== currentUser?.id));
-      }).catch(console.error);
-    }
-  }, [showAddMember]);
+  // TanStack Query: Messages & Mutations
+  const { data: messages = [], isLoading } = useMessagesQuery(chatRoomId);
+  const { data: friendsList = [] } = useProfilesQuery(currentUser?.id);
+  const sendMessageMutation = useSendMessageMutation(chatRoomId, currentUser?.id);
+  const addMemberMutation = useAddMemberToGroupMutation(chatRoomId);
+  const markReadMutation = useMarkMessagesAsReadMutation();
 
-  const handleAddFriendToGroup = async (userId) => {
-    try {
-      await addMemberToGroup(chatRoomId, userId);
-      alert('Đã thêm thành viên');
-      setShowAddMember(false);
-    } catch (e) {
-      alert('Thêm thành viên thất bại hoặc đã có trong nhóm');
-      console.error(e);
-    }
+  const handleAddFriendToGroup = (userId) => {
+    addMemberMutation.mutate(
+      { userId },
+      {
+        onSuccess: () => {
+          showToast.success('Thành công', 'Đã thêm thành viên vào nhóm');
+          setShowAddMember(false);
+        },
+        onError: (e) => {
+          showToast.error('Lỗi', 'Thêm thành viên thất bại hoặc đã có trong nhóm');
+          console.error(e);
+        },
+      }
+    );
   };
 
   useEffect(() => {
-    fetchMessages(1);
-
     if (currentUser?.id) {
-      markMessagesAsRead(chatRoomId, currentUser.id).catch(err => console.log('Error marking messages as read:', err));
+      markReadMutation.mutate({ conversationId: chatRoomId, userId: currentUser.id });
     }
 
     const channel = supabase.channel(`room:${chatRoomId}`);
@@ -99,12 +104,9 @@ export default function MessageDetailScreen({ route, navigation }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         const newMsg = payload.new;
         if (newMsg && newMsg.conversation_id === chatRoomId) {
-          setMessages(prev => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [newMsg, ...prev];
-          });
+          queryClient.invalidateQueries({ queryKey: MESSAGE_KEYS.messages(chatRoomId) });
           if (newMsg.sender_id !== currentUser?.id) {
-            markMessagesAsRead(chatRoomId, currentUser?.id).catch(console.error);
+            markReadMutation.mutate({ conversationId: chatRoomId, userId: currentUser?.id });
           }
         }
       })
@@ -113,7 +115,7 @@ export default function MessageDetailScreen({ route, navigation }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatRoomId]);
+  }, [chatRoomId, queryClient]);
 
   const sendTypingStatus = (isTyping) => {
     if (!channelRef.current) return;
@@ -142,58 +144,14 @@ export default function MessageDetailScreen({ route, navigation }) {
     }
   };
 
-  const fetchMessages = async (pageNumber) => {
-    try {
-      const res = await getMessages(chatRoomId, pageNumber, limit);
-      if (res.data) {
-        if (pageNumber === 1) {
-          setMessages(res.data);
-        } else {
-          setMessages(prev => [...prev, ...res.data]);
-        }
-        if (res.data.length < limit) {
-          setHasMore(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const loadMoreMessages = () => {
-    if (!loadingMore && hasMore) {
-      setLoadingMore(true);
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchMessages(nextPage);
-    }
-  };
-
   const handleSend = async () => {
     if (!inputText.trim()) return;
+    const textToSend = inputText.trim();
+    setInputText('');
     sendTypingStatus(false);
     lastTypingTime.current = 0;
 
-    const tempId = Date.now().toString();
-    const newMsg = {
-      id: tempId,
-      conversation_id: chatRoomId,
-      sender_id: currentUser?.id,
-      content: inputText.trim(),
-      created_at: new Date().toISOString(),
-    };
-
-    setMessages(prev => [newMsg, ...prev]);
-    setInputText('');
-
-    try {
-      await sendMessage(chatRoomId, currentUser?.id, newMsg.content);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+    sendMessageMutation.mutate({ content: textToSend });
   };
 
   const typingUsernames = Object.values(typingUsers);
@@ -224,10 +182,11 @@ export default function MessageDetailScreen({ route, navigation }) {
             className={`px-4 py-3 ${
               isMe 
                 ? 'bg-zalo-blue rounded-3xl rounded-br-sm' 
-                : 'bg-white dark:bg-zalo-darkCard rounded-3xl rounded-bl-sm shadow-sm'
+                : 'rounded-3xl rounded-bl-sm shadow-sm'
             }`}
+            style={!isMe ? { backgroundColor: colors.bgCard } : {}}
           >
-            <Text className={`text-base leading-[22px] ${isMe ? 'text-white' : 'text-black dark:text-white'}`}>
+            <Text className={`text-base leading-[22px] ${isMe ? 'text-white' : ''}`} style={!isMe ? { color: colors.text } : {}}>
               {item.content}
             </Text>
           </View>
@@ -237,11 +196,11 @@ export default function MessageDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f2f2f7] dark:bg-black" edges={['right', 'left']}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.bg }} edges={['right', 'left']}>
       {/* Header */}
       <View 
-        className="flex-row items-center px-3 py-2.5 bg-white dark:bg-zalo-darkCard shadow-sm z-10"
-        style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10 }}
+        className="flex-row items-center px-3 py-2.5 shadow-sm z-10"
+        style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10, backgroundColor: colors.bgHeader }}
       >
         <TouchableOpacity className="p-1.5 mr-1.5 -ml-1" onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={26} color={colors?.text || '#000'} />
@@ -249,104 +208,101 @@ export default function MessageDetailScreen({ route, navigation }) {
 
         <TouchableOpacity 
           className="flex-row items-center flex-1"
-          activeOpacity={0.7}
-          onPress={() => isGroup && setShowAddMember(true)}
+          activeOpacity={0.8}
         >
-          <Avatar
-            url={avatar}
-            name={chatName}
-            size={36}
-            className="mr-3 border border-black/10 dark:border-white/10"
-          />
-          <View className="flex-1 justify-center">
-            <Text className="text-[17px] font-bold text-black dark:text-white tracking-tight" numberOfLines={1}>
-              {chatName || 'Trò chuyện'}
+          <View className="relative">
+            <Avatar
+              url={avatar}
+              name={chatName}
+              size={42}
+              rounded={!isGroup}
+            />
+            {!isGroup && (
+              <View className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2" style={{ borderColor: colors.bgCard }} />
+            )}
+          </View>
+
+          <View className="ml-2.5 flex-1">
+            <Text className="text-base font-bold" style={{ color: colors.text }} numberOfLines={1}>
+              {chatName || 'Người dùng'}
             </Text>
-            <Text className="text-xs font-semibold text-green-500 mt-0.5">Đang hoạt động</Text>
+            <Text className="text-xs text-green-500 font-medium mt-0.5">
+              {typingText || (isGroup ? 'Nhóm trò chuyện' : 'Vừa mới truy cập')}
+            </Text>
           </View>
         </TouchableOpacity>
 
-        <View className="flex-row items-center">
-          <TouchableOpacity className="w-9 h-9 rounded-full bg-gray-200 dark:bg-zalo-darkInput items-center justify-center ml-1.5">
-            <Ionicons name="call-outline" size={18} color={colors?.text || '#000'} />
+        <View className="flex-row items-center gap-1.5">
+          <TouchableOpacity className="p-2">
+            <Ionicons name="call-outline" size={22} color={colors?.text || '#000'} />
           </TouchableOpacity>
-          <TouchableOpacity className="w-9 h-9 rounded-full bg-gray-200 dark:bg-zalo-darkInput items-center justify-center ml-1.5">
-            <Ionicons name="videocam-outline" size={20} color={colors?.text || '#000'} />
+          <TouchableOpacity className="p-2">
+            <Ionicons name="videocam-outline" size={24} color={colors?.text || '#000'} />
           </TouchableOpacity>
-          {isGroup && (
-            <TouchableOpacity 
-              className="w-9 h-9 rounded-full bg-gray-200 dark:bg-zalo-darkInput items-center justify-center ml-1.5" 
-              onPress={() => setShowAddMember(true)}
-            >
-              <Ionicons name="person-add-outline" size={18} color={colors?.text || '#000'} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity className="p-2" onPress={() => setShowAddMember(!showAddMember)}>
+            <Ionicons name={isGroup ? "person-add-outline" : "reorder-three-outline"} size={24} color={colors?.text || '#000'} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Main Messages View */}
-      <View className="flex-1">
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          inverted
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, flexGrow: 1, justifyContent: 'flex-end' }}
-          onEndReached={loadMoreMessages}
-          onEndReachedThreshold={0.2}
-          ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={colors?.accent || '#0068ff'} className="my-2" /> : null}
-        />
-
-        {/* Input Bar with Plus Menu & Typing Indicator */}
-        <ChatInput
-          inputText={inputText}
-          setInputText={handleInputChange}
-          showPlusMenu={showPlusMenu}
-          setShowPlusMenu={setShowPlusMenu}
-          handleSend={handleSend}
-          insets={insets}
-          colors={colors}
-          typingText={typingText}
-        />
-      </View>
-
-      {/* Add Member Modal */}
+      {/* Add Member Dropdown for Groups */}
       {showAddMember && (
-        <View className="absolute inset-0 bg-black/50 justify-center items-center z-50">
-          <View className="w-[85%] bg-white dark:bg-zalo-darkCard rounded-2xl p-5 max-h-[80%] items-center">
-            <Text className="text-lg font-bold text-black dark:text-white mb-4">Thêm thành viên vào nhóm</Text>
-            <FlatList
-              data={friendsList}
-              keyExtractor={item => item.id}
-              className="w-full max-h-[300px]"
-              renderItem={({ item }) => (
-                <View className="flex-row items-center py-2 w-full">
-                  <Avatar
-                    url={item.avatar_url}
-                    name={item.full_name || item.username}
-                    size={36}
-                    className="mr-3"
-                  />
-                  <Text className="text-base text-black dark:text-white flex-1">{item.full_name || item.username}</Text>
-                  <TouchableOpacity 
-                    className="px-3 py-1.5 bg-zalo-blue rounded-md" 
-                    onPress={() => handleAddFriendToGroup(item.id)}
-                  >
-                    <Text className="text-white text-xs font-semibold">Thêm</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-            <TouchableOpacity 
-              className="px-6 py-2.5 rounded-lg bg-gray-200 dark:bg-zalo-darkInput mt-4" 
-              onPress={() => setShowAddMember(false)}
-            >
-              <Text className="text-black dark:text-white font-semibold">Đóng</Text>
-            </TouchableOpacity>
-          </View>
+        <View className="border-b p-3 max-h-48 shadow-md z-20" style={{ backgroundColor: colors.bgCard, borderColor: colors.border }}>
+          <Text className="font-bold mb-2" style={{ color: colors.text }}>Thêm thành viên vào nhóm:</Text>
+          <FlatList
+            data={friendsList}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                className="flex-row items-center py-2 border-b"
+                style={{ borderColor: colors.border }}
+                onPress={() => handleAddFriendToGroup(item.id)}
+              >
+                <Avatar url={item.avatar_url} name={item.full_name || item.username} size={30} />
+                <Text className="ml-2 flex-1" style={{ color: colors.text }}>{item.full_name || item.username}</Text>
+                <Ionicons name="add-circle" size={20} color={colors?.accent || '#0068ff'} />
+              </TouchableOpacity>
+            )}
+          />
         </View>
       )}
+
+      {/* Messages list */}
+      <KeyboardAvoidingView 
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View className="flex-1 px-4">
+          {isLoading ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color={colors?.accent || '#0068ff'} />
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderItem}
+              inverted
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+
+        {/* Input Bar */}
+        <ChatInput 
+          inputText={inputText}
+          handleInputChange={handleInputChange}
+          handleSend={handleSend}
+          colors={colors}
+          showPlusMenu={showPlusMenu}
+          setShowPlusMenu={setShowPlusMenu}
+          chatRoomId={chatRoomId}
+          currentUser={currentUser}
+          insets={insets}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

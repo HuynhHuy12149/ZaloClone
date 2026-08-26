@@ -100,12 +100,16 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
       }}
     >
       <View
-        className="h-16 flex-row rounded-full shadow-lg bg-white dark:bg-zalo-darkCard"
+        className="h-16 flex-row rounded-full shadow-lg"
         style={{
+          backgroundColor: colors.tabBg,
+          borderColor: colors.tabBorder,
+          borderWidth: 1,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.08,
+          shadowOpacity: 0.15,
           shadowRadius: 24,
+          elevation: 8,
         }}
       >
         {state.routes.map((route, index) => {

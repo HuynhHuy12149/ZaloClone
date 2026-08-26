@@ -72,12 +72,12 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
         </TouchableWithoutFeedback>
 
         <Animated.View
-          className="rounded-t-[32px] px-5 pt-3 bg-white dark:bg-zalo-darkCard"
-          style={{ transform: [{ translateY: sheetTranslateY }] }}
+          className="rounded-t-[32px] px-5 pt-3"
+          style={{ transform: [{ translateY: sheetTranslateY }], backgroundColor: colors.bgCard }}
         >
-          <View className="w-10 h-1 rounded-full self-center mb-5 bg-gray-300 dark:bg-zalo-darkBorder" />
+          <View className="w-10 h-1 rounded-full self-center mb-5" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
 
-          <Text className="text-[17px] font-bold text-center mb-6 text-black dark:text-white">
+          <Text className="text-[17px] font-bold text-center mb-6" style={{ color: colors?.text || '#000' }}>
             Ai có thể xem bài viết này?
           </Text>
 
@@ -91,11 +91,11 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
                   hide();
                 }}
               >
-                <View className="w-11 h-11 rounded-full items-center justify-center bg-gray-200 dark:bg-zalo-darkInput">
+                <View className="w-11 h-11 rounded-full items-center justify-center" style={{ backgroundColor: colors.bgInput }}>
                   <Ionicons name={opt.icon} size={22} color={colors?.text || '#000'} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold mb-0.5 text-black dark:text-white">{opt.label}</Text>
+                  <Text className="text-base font-semibold mb-0.5" style={{ color: colors?.text || '#000' }}>{opt.label}</Text>
                   <Text className="text-[13px] text-gray-400">{opt.desc}</Text>
                 </View>
 
@@ -103,7 +103,7 @@ const PrivacyPickerSheet = forwardRef(({ onSelect, selectedValue }, ref) => {
                   {selectedValue === opt.value ? (
                     <Ionicons name="checkmark-circle" size={24} color={colors?.accent || '#0068ff'} />
                   ) : (
-                    <View className="w-5 h-5 rounded-full border-[1.5px] border-gray-300 dark:border-gray-600" />
+                    <View className="w-5 h-5 rounded-full border-[1.5px]" style={{ borderColor: colors?.border || '#d1d5db' }} />
                   )}
                 </View>
               </TouchableOpacity>

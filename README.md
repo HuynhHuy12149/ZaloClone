@@ -87,14 +87,16 @@ src/
 │   │   ├── TabsNavigator.js           # 5 Tabs chính
 │   │   └── Router.js                  # Modal & Sub-screens config
 │   │
-│   ├── services/                      # 4. Tầng API & SDKs (Phẳng 1 tầng trực tiếp)
+│   ├── services/                      # 4. Tầng API, SDKs & TanStack Query
 │   │   ├── supabase.js                # Client Supabase
 │   │   ├── cloudinary.js              # Client Cloudinary Upload
 │   │   ├── supabaseProxy.js           # Proxy bọc query Supabase
-│   │   ├── authService.js             # API Auth
-│   │   ├── postService.js             # API Bài viết & tương tác
-│   │   ├── messageService.js          # API Tin nhắn & Realtime
-│   │   └── friendService.js           # API Bạn bè
+│   │   ├── queryClient.js             # TanStack QueryClient cấu hình cho Mobile
+│   │   └── queries/                   # Tầng API & Custom Hooks (Auth, Post, Message, Friend)
+│   │       ├── useAuthQueries.js      # Auth API & Hooks
+│   │       ├── usePostQueries.js      # Post & Comment API & Hooks
+│   │       ├── useMessageQueries.js   # Chat & Realtime API & Hooks
+│   │       └── useFriendQueries.js    # Friend API & Hooks
 │   │
 │   └── shared/                        # 5. Hệ thống phụ trợ
 │       ├── enums/                     # Thư mục Enums riêng (postEnums.js, serverEndpoint.js)

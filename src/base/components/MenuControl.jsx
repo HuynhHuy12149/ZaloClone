@@ -5,11 +5,14 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import Animated, { ZoomIn, ZoomOut } from "react-native-reanimated";
+import { useTheme } from '@/base/context/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-export default function MenuControl({ visible, onClose, items, from, isModal = false, horizontal = false, menuWidth: customWidth, backgroundColor = "white" }) {
+export default function MenuControl({ visible, onClose, items, from, isModal = false, horizontal = false, menuWidth: customWidth, backgroundColor }) {
+    const { colors } = useTheme();
     const [popoverLayout, setPopoverLayout] = useState(null);
+    const resolvedBg = backgroundColor || colors.bgCard;
     const menuWidth = customWidth || (horizontal ? 280 : 200);
 
     useEffect(() => {
@@ -86,8 +89,8 @@ export default function MenuControl({ visible, onClose, items, from, isModal = f
                                             borderLeftColor: "transparent",
                                             borderRightColor: "transparent",
                                             ...(popoverLayout.showAbove 
-                                                ? { borderTopWidth: 8, borderTopColor: backgroundColor, bottom: 0 } 
-                                                : { borderBottomWidth: 8, borderBottomColor: backgroundColor, top: 0 }),
+                                                ? { borderTopWidth: 8, borderTopColor: resolvedBg, bottom: 0 } 
+                                                : { borderBottomWidth: 8, borderBottomColor: resolvedBg, top: 0 }),
                                             position: "absolute",
                                             left: popoverLayout.arrowLeft
                                         }} 
@@ -96,7 +99,7 @@ export default function MenuControl({ visible, onClose, items, from, isModal = f
 
                                 <View 
                                     className={`rounded-xl overflow-hidden ${horizontal ? 'flex-row p-1' : 'flex-col p-0'}`}
-                                    style={{ backgroundColor }}
+                                    style={{ backgroundColor: resolvedBg }}
                                 >
                                     {items.map((item, index) => (
                                         <TouchableOpacity
@@ -107,8 +110,9 @@ export default function MenuControl({ visible, onClose, items, from, isModal = f
                                             }}
                                             activeOpacity={0.7}
                                             className={`${horizontal ? 'flex-1 items-center justify-center py-2.5' : 'w-full'} ${
-                                                (!horizontal && index < items.length - 1) ? 'border-b border-gray-100 dark:border-zalo-darkBorder' : ''
+                                                (!horizontal && index < items.length - 1) ? 'border-b' : ''
                                             }`}
+                                            style={(!horizontal && index < items.length - 1) ? { borderBottomColor: colors.border } : {}}
                                         >
                                             {horizontal ? (
                                                 <Text className="text-[26px]">{item.emoji || item.label}</Text>
@@ -123,7 +127,7 @@ export default function MenuControl({ visible, onClose, items, from, isModal = f
                                                             )}
                                                         </View>
                                                     )}
-                                                    <Text className="text-[15px] font-medium flex-1" style={{ color: item.color || "#444" }}>
+                                                    <Text className="text-[15px] font-medium flex-1" style={{ color: item.color || colors.text }}>
                                                         {item.label}
                                                     </Text>
                                                     {item.active && (

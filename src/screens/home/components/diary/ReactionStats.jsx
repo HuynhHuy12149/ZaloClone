@@ -24,9 +24,10 @@ export default function ReactionStats({ types = [], count = 0, colors }) {
           return (
             <View
               key={type}
-              className="w-5 h-5 rounded-full items-center justify-center border-2 border-white"
+              className="w-5 h-5 rounded-full items-center justify-center border-2"
               style={{
                 backgroundColor: style?.color || '#FFD32D',
+                borderColor: colors?.bgCard || '#ffffff',
                 zIndex: 10 - idx,
                 marginLeft: idx > 0 ? -6 : 0
               }}
@@ -37,7 +38,8 @@ export default function ReactionStats({ types = [], count = 0, colors }) {
         })}
       </View>
       <Text 
-        className="text-[13px] ml-1.5 font-semibold text-gray-500 dark:text-gray-400"
+        className="text-[13px] ml-1.5 font-semibold"
+        style={{ color: colors?.textSub || '#6b7280' }}
       >
         {count}
       </Text>

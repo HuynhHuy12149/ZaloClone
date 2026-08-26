@@ -23,33 +23,33 @@ export default function ChatInput({
 
       {showPlusMenu && (
         <View 
-          className="absolute left-4 bg-white dark:bg-zalo-darkCard rounded-xl p-2 shadow-lg border border-black/5 z-50"
-          style={{ bottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) + 60 : Math.max(insets.bottom - 10, 12) + 60 }}
+          className="absolute left-4 rounded-xl p-2 shadow-lg border border-black/5 z-50"
+          style={{ backgroundColor: colors.bgCard, bottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) + 60 : Math.max(insets.bottom - 10, 12) + 60 }}
         >
           <TouchableOpacity className="flex-row items-center py-2.5 px-3">
             <View className="w-8 h-8 rounded-full justify-center items-center mr-3 bg-amber-500">
               <Ionicons name="mic" size={18} color="#fff" />
             </View>
-            <Text className="text-[15px] font-medium text-black dark:text-white">Giọng nói</Text>
+            <Text className="text-[15px] font-medium" style={{ color: colors.text }}>Giọng nói</Text>
           </TouchableOpacity>
           <TouchableOpacity className="flex-row items-center py-2.5 px-3">
             <View className="w-8 h-8 rounded-full justify-center items-center mr-3 bg-green-500">
               <Ionicons name="image" size={18} color="#fff" />
             </View>
-            <Text className="text-[15px] font-medium text-black dark:text-white">Hình ảnh</Text>
+            <Text className="text-[15px] font-medium" style={{ color: colors.text }}>Hình ảnh</Text>
           </TouchableOpacity>
           <TouchableOpacity className="flex-row items-center py-2.5 px-3">
             <View className="w-8 h-8 rounded-full justify-center items-center mr-3 bg-blue-500">
               <Ionicons name="location" size={18} color="#fff" />
             </View>
-            <Text className="text-[15px] font-medium text-black dark:text-white">Vị trí</Text>
+            <Text className="text-[15px] font-medium" style={{ color: colors.text }}>Vị trí</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View 
-        className="flex-row items-center px-2 py-2.5 bg-white dark:bg-zalo-darkCard mx-4 mt-2 rounded-[30px] shadow-lg border border-black/5"
-        style={{ marginBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom - 10, 12) }}
+        className="flex-row items-center px-2 py-2.5 mx-4 mt-2 rounded-[30px] shadow-lg border border-black/5"
+        style={{ backgroundColor: colors.bgCard, marginBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom - 10, 12) }}
       >
         <TouchableOpacity className="p-2 justify-center items-center" onPress={() => setShowPlusMenu(!showPlusMenu)}>
           <Ionicons name="add-circle" size={30} color={colors?.textMuted || '#888'} />
@@ -57,7 +57,8 @@ export default function ChatInput({
 
         <View className="flex-1 flex-row items-center rounded-3xl pl-4 pr-2 ml-2 min-h-[44px] max-h-[120px]">
           <TextInput
-            className="flex-1 text-base text-black dark:text-white pt-0 pb-0"
+            className="flex-1 text-base pt-0 pb-0"
+            style={{ color: colors.text }}
             placeholder="Tin nhắn..."
             placeholderTextColor={colors?.textMuted || '#999'}
             value={inputText}

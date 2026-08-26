@@ -14,8 +14,8 @@ const REACTIONS = [
 export default function ReactionPicker({ onSelect, colors }) {
   return (
     <View 
-      className="flex-row p-2 rounded-full shadow-md gap-3 items-center justify-center border border-black/5 bg-white dark:bg-zalo-darkCard"
-      style={{ elevation: 5 }}
+      className="flex-row p-2 rounded-full shadow-md gap-3 items-center justify-center border border-black/5"
+      style={{ elevation: 5, backgroundColor: colors.bgCard }}
     >
       {REACTIONS.map((item) => (
         <TouchableOpacity

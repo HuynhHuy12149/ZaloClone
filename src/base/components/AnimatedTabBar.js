@@ -27,8 +27,8 @@ export default function AnimatedTabBar({ tabs, active, onChange, style }) {
 
   return (
     <View
-      className="flex-row relative h-[52px] z-[5] bg-white dark:bg-zalo-darkCard"
-      style={style}
+      className="flex-row relative h-[52px] z-[5]"
+      style={[style, { backgroundColor: colors.bgCard }]}
     >
       {/* Sliding bottom indicator container */}
       <Animated.View

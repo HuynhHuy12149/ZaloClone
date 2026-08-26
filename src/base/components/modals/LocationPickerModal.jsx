@@ -175,14 +175,15 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      className="flex-row items-center py-3.5 border-b border-gray-200/30 dark:border-zalo-darkBorder/30"
+      className="flex-row items-center py-3.5 border-b"
+      style={{ borderBottomColor: colors?.border || '#e5e7eb' }}
       onPress={() => handleSelect(item)}
     >
-      <View className="w-10 h-10 rounded-full items-center justify-center mr-3 bg-gray-200 dark:bg-zalo-darkInput">
+      <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: colors.bgInput }}>
         <Ionicons name="location-sharp" size={20} color={colors?.accent || '#0068ff'} />
       </View>
       <View className="flex-1">
-        <Text className="text-base font-bold text-black dark:text-white mb-0.5">
+        <Text className="text-base font-bold mb-0.5" style={{ color: colors?.text || '#000' }}>
           {item.structured_formatting?.main_text || item.description}
         </Text>
         <Text className="text-[13px] text-gray-400" numberOfLines={1}>
@@ -214,20 +215,21 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="rounded-t-[32px] pt-3 bg-white dark:bg-zalo-darkCard"
-            style={{ height: SCREEN_HEIGHT * 0.85 }}
+            className="rounded-t-[32px] pt-3"
+            style={{ height: SCREEN_HEIGHT * 0.85, backgroundColor: colors.bgCard }}
           >
-            <View className="w-10 h-1 rounded-full self-center mb-2.5 bg-gray-300 dark:bg-zalo-darkBorder" />
+            <View className="w-10 h-1 rounded-full self-center mb-2.5" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
 
             <View className="px-4 pb-4 items-center">
-              <Text className="text-lg font-extrabold text-black dark:text-white">Địa điểm</Text>
+              <Text className="text-lg font-extrabold" style={{ color: colors?.text || '#000' }}>Địa điểm</Text>
             </View>
 
             <View className="px-4 pb-4">
-              <View className="flex-row items-center rounded-full h-11 bg-gray-200 dark:bg-zalo-darkInput">
+              <View className="flex-row items-center rounded-full h-11" style={{ backgroundColor: colors.bgInput }}>
                 <Ionicons name="search" size={20} color={colors?.textMuted || '#9ca3af'} style={{ marginLeft: 12 }} />
                 <TextInput
-                  className="flex-1 px-2.5 text-[15px] text-black dark:text-white"
+                  className="flex-1 px-2.5 text-[15px]"
+                  style={{ color: colors?.text || '#000' }}
                   placeholder="Tìm kiếm địa điểm"
                   placeholderTextColor={colors?.textPlaceholder || '#9ca3af'}
                   value={search}
@@ -258,7 +260,7 @@ const LocationPickerModal = forwardRef(({ onSelect, onClose }, ref) => {
                 !search && locations.length > 0 && (
                   <View className="flex-row items-center gap-1.5 py-2.5 mt-1">
                     <MaterialIcons name="my-location" size={16} color={colors?.textSub || '#6b7280'} />
-                    <Text className="text-[13px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+                    <Text className="text-[13px] font-semibold uppercase" style={{ color: colors?.textSub || '#6b7280' }}>
                       Địa điểm gần bạn
                     </Text>
                   </View>

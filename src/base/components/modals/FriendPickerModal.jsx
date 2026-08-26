@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/base/context/ThemeContext';
 import Avatar from '@/base/components/Avatar';
 import { useAuthStore } from '@/base/shared/store/authStore';
-import { getAcceptedFriends } from '@/base/services/friendService';
+import { useFriendsQuery } from '@/base/services/queries';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -21,9 +21,9 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
 
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
-  const [friends, setFriends] = useState([]);
   const [selectedFriends, setSelectedFriends] = useState(initialSelected);
-  const [loading, setLoading] = useState(false);
+
+  const { data: friends = [], isLoading: loading } = useFriendsQuery(user?.id);
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -31,7 +31,6 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
   const show = () => {
     setSelectedFriends(initialSelected);
     setVisible(true);
-    fetchFriends();
     Animated.parallel([
       Animated.timing(backdropOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.timing(sheetTranslateY, { toValue: 0, duration: 350, useNativeDriver: true })
@@ -52,25 +51,6 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
     present: show,
     dismiss: hide,
   }));
-
-  const fetchFriends = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const response = await getAcceptedFriends(user.id);
-      if (response && response.data) {
-        const friendList = response.data.map(row => {
-          return row.user?.id === user.id ? row.friend : row.user;
-        }).filter(p => p !== null);
-
-        setFriends(friendList);
-      }
-    } catch (e) {
-      console.error('FriendPicker UI Error:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleFriend = (friend) => {
     const isSelected = selectedFriends.some(f => f.id === friend.id);
@@ -95,7 +75,8 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
     const isSelected = selectedFriends.some(f => f.id === item.id);
     return (
       <TouchableOpacity
-        className="flex-row items-center py-3.5 border-b border-gray-200/40 dark:border-zalo-darkBorder/40"
+        className="flex-row items-center py-3.5 border-b"
+        style={{ borderBottomColor: colors?.border || '#e5e7eb' }}
         onPress={() => toggleFriend(item)}
         activeOpacity={0.7}
       >
@@ -105,12 +86,15 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
           size={42}
         />
         <View className="flex-1 ml-3">
-          <Text className="text-base font-bold text-black dark:text-white mb-0.5">{item.full_name}</Text>
+          <Text className="text-base font-bold mb-0.5" style={{ color: colors?.text || '#000' }}>{item.full_name}</Text>
           <Text className="text-[13px] text-gray-400">@{item.username || 'user'}</Text>
         </View>
-        <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-          isSelected ? 'bg-zalo-blue border-zalo-blue' : 'border-gray-300 dark:border-gray-600'
-        }`}>
+        <View 
+          className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+            isSelected ? 'bg-zalo-blue border-zalo-blue' : ''
+          }`}
+          style={!isSelected ? { borderColor: colors?.border || '#d1d5db' } : {}}
+        >
           {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
         </View>
       </TouchableOpacity>
@@ -139,26 +123,27 @@ const FriendPickerModal = forwardRef(({ onSelect, initialSelected = [] }, ref) =
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="rounded-t-[32px] pt-3 bg-white dark:bg-zalo-darkCard"
-            style={{ height: SCREEN_HEIGHT * 0.85 }}
+            className="rounded-t-[32px] pt-3"
+            style={{ height: SCREEN_HEIGHT * 0.85, backgroundColor: colors.bgCard }}
           >
-            <View className="w-10 h-1 rounded-full self-center mb-2.5 bg-gray-300 dark:bg-zalo-darkBorder" />
+            <View className="w-10 h-1 rounded-full self-center mb-2.5" style={{ backgroundColor: colors?.border || '#e5e7eb' }} />
 
             <View className="flex-row items-center justify-between px-2 h-12">
               <TouchableOpacity onPress={hide} className="px-3 h-full justify-center">
-                <Text className="text-base text-black dark:text-white">Hủy</Text>
+                <Text className="text-base" style={{ color: colors?.text || '#000' }}>Hủy</Text>
               </TouchableOpacity>
-              <Text className="text-lg font-extrabold text-black dark:text-white">Gắn thẻ bạn bè</Text>
+              <Text className="text-lg font-extrabold" style={{ color: colors?.text || '#000' }}>Gắn thẻ bạn bè</Text>
               <TouchableOpacity onPress={handleConfirm} className="px-3 h-full justify-center">
                 <Text className="text-base font-bold text-zalo-blue">Xong</Text>
               </TouchableOpacity>
             </View>
 
             <View className="px-4 py-3">
-              <View className="flex-row items-center rounded-full h-11 bg-gray-200 dark:bg-zalo-darkInput">
+              <View className="flex-row items-center rounded-full h-11" style={{ backgroundColor: colors.bgInput }}>
                 <Ionicons name="search" size={18} color={colors?.textMuted || '#9ca3af'} style={{ marginLeft: 12 }} />
                 <TextInput
-                  className="flex-1 ml-2 text-[15px] text-black dark:text-white"
+                  className="flex-1 ml-2 text-[15px]"
+                  style={{ color: colors?.text || '#000' }}
                   placeholder="Tìm kiếm bạn bè"
                   placeholderTextColor={colors?.textPlaceholder || '#9ca3af'}
                   value={search}

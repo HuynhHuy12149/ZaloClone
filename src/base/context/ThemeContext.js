@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const THEME_KEY = '@app_theme';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useColorScheme as useDeviceColorScheme, Appearance } from 'react-native';
+import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
+import { getCache, setCache, CACHE_KEYS } from '@/base/shared/store/cache';
 
 const ThemeContext = createContext({
+  themeMode: 'system', // 'light' | 'dark' | 'system'
   isDark: true,
+  setThemeMode: () => {},
   toggleTheme: () => {},
   colors: {},
-  animatedBg: null,
 });
 
 export const lightColors = {
@@ -80,42 +80,60 @@ export const darkColors = {
 };
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(true);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const deviceColorScheme = useDeviceColorScheme();
+  const { setColorScheme: setNwColorScheme } = useNativeWindColorScheme();
 
+  const [themeMode, setThemeModeState] = useState('system'); // 'light' | 'dark' | 'system'
+  const [deviceTheme, setDeviceTheme] = useState(deviceColorScheme || 'light');
+
+  // Load saved theme preference from Cache
   useEffect(() => {
-    AsyncStorage.getItem(THEME_KEY).then((val) => {
-      if (val !== null) setIsDark(val === 'dark');
+    getCache(CACHE_KEYS.THEME_MODE).then((savedMode) => {
+      if (savedMode && ['light', 'dark', 'system'].includes(savedMode)) {
+        setThemeModeState(savedMode);
+        applyTheme(savedMode, deviceTheme);
+      } else {
+        applyTheme('system', deviceTheme);
+      }
     });
+
+    // Listen to device theme changes
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setDeviceTheme(colorScheme || 'light');
+      if (themeMode === 'system') {
+        applyTheme('system', colorScheme || 'light');
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
-  const toggleTheme = () => {
-    // Fade out → switch → fade in
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0.6,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    const next = !isDark;
-    setIsDark(next);
-    AsyncStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
+  const applyTheme = (mode, currentDeviceTheme) => {
+    const effectiveTheme = mode === 'system' ? (currentDeviceTheme || 'light') : mode;
+    if (setNwColorScheme) {
+      setNwColorScheme(effectiveTheme);
+    }
   };
 
+  const setThemeMode = async (mode) => {
+    setThemeModeState(mode);
+    applyTheme(mode, deviceTheme);
+    await setCache(CACHE_KEYS.THEME_MODE, mode);
+  };
+
+  const toggleTheme = () => {
+    const isCurrentlyDark = themeMode === 'system' ? deviceTheme === 'dark' : themeMode === 'dark';
+    const nextMode = isCurrentlyDark ? 'light' : 'dark';
+    setThemeMode(nextMode);
+  };
+
+  // Determine current active dark mode state
+  const isDark = themeMode === 'system' ? deviceTheme === 'dark' : themeMode === 'dark';
   const colors = isDark ? darkColors : lightColors;
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, colors, fadeAnim }}>
-      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-        {children}
-      </Animated.View>
+    <ThemeContext.Provider value={{ themeMode, isDark, setThemeMode, toggleTheme, colors }}>
+      {children}
     </ThemeContext.Provider>
   );
 }

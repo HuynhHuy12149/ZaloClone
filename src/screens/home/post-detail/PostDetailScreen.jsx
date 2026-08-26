@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator
@@ -7,75 +7,49 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/base/context/ThemeContext';
 import PostItem from '../components/diary/PostItem';
-import { getComments, addComment, getPostById } from '@/base/services/postService';
+import CommentItem from './CommentItem';
+import { 
+  usePostDetailQuery, 
+  useCommentsQuery, 
+  useAddCommentMutation,
+  useToggleLikeMutation
+} from '@/base/services/queries';
 import Avatar from '@/base/components/Avatar';
 
 export default function PostDetailScreen({ route, navigation }) {
-  const { post: initialPost, onUpdatePost } = route.params;
+  const { post: initialPost } = route.params;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [post, setLocalPost] = useState(initialPost);
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
 
-  // Sync when initialPost changes
-  useEffect(() => {
-    setLocalPost(initialPost);
-  }, [initialPost]);
-
-  useEffect(() => {
-    fetchPostDetails();
-    fetchComments();
-  }, [initialPost.id]);
-
-  const fetchPostDetails = async () => {
-    const res = await getPostById(initialPost.id);
-    if (res.success) {
-      setLocalPost(res.data);
-    }
-  };
-
-  const fetchComments = async () => {
-    setLoading(true);
-    const res = await getComments(initialPost.id);
-    if (res.success) {
-      setComments(res.data);
-    }
-    setLoading(false);
-  };
+  // TanStack Query: Fetch Post Detail & Comments
+  const { data: post = initialPost } = usePostDetailQuery(initialPost.id, initialPost);
+  const { data: comments = [], isLoading: loadingComments } = useCommentsQuery(initialPost.id);
+  const addCommentMutation = useAddCommentMutation(initialPost.id);
+  const toggleLikeMutation = useToggleLikeMutation();
 
   const handleSendComment = async (parentId = null) => {
-    if (!commentText.trim() || isSending) return;
-    
-    setIsSending(true);
-    const res = await addComment(post.id, commentText.trim(), 'text', parentId);
-    if (res.success) {
-      setCommentText('');
-      setReplyTo(null);
-      fetchComments(); 
-      
-      const updated = { 
-        ...post, 
-        comment_count: (post.comment_count || 0) + 1 
-      };
-      setLocalPost(updated);
-      if (onUpdatePost) onUpdatePost(updated);
-    }
-    setIsSending(false);
+    if (!commentText.trim() || addCommentMutation.isPending) return;
+
+    addCommentMutation.mutate(
+      { content: commentText.trim(), type: 'text', parentId },
+      {
+        onSuccess: () => {
+          setCommentText('');
+          setReplyTo(null);
+        },
+      }
+    );
   };
 
   const handleReactionUpdate = (isLiked, type) => {
-    const updated = {
-      ...post,
-      is_liked: isLiked,
-      user_reaction: type,
-      like_count: isLiked ? (post.like_count || 0) + 1 : Math.max(0, (post.like_count || 1) - 1)
-    };
-    setLocalPost(updated);
-    if (onUpdatePost) onUpdatePost(updated);
+    toggleLikeMutation.mutate({ postId: post.id, reactionType: type });
+  };
+
+  const handleReply = (comment) => {
+    setReplyTo(comment);
+    setCommentText(`@${comment.profiles?.full_name} `);
   };
 
   const nestedComments = () => {
@@ -92,52 +66,21 @@ export default function PostDetailScreen({ route, navigation }) {
     return roots;
   };
 
-  const CommentItem = ({ comment, level = 0 }) => (
-    <View className={`mb-6 ${level > 0 ? 'ml-8' : ''}`}>
-      <View className="flex-row">
-        <Avatar 
-          url={comment.profiles?.avatar_url} 
-          name={comment.profiles?.full_name} 
-          size={level > 0 ? 32 : 40} 
-          rounded={false} 
-        />
-        <View className="flex-1 ml-3.5">
-          <View className="rounded-3xl rounded-tl-sm px-4 py-3 self-start bg-gray-200/50 dark:bg-zalo-darkInput/50">
-            <Text className="font-extrabold text-sm mb-1 text-black dark:text-white">{comment.profiles?.full_name}</Text>
-            <Text className="text-[15px] leading-[22px] text-black dark:text-white">{comment.content}</Text>
-          </View>
-          <View className="flex-row items-center mt-1.5 ml-1 gap-5">
-            <Text className="text-xs font-medium text-gray-400">27 phút</Text>
-            <TouchableOpacity onPress={() => {
-              setReplyTo(comment);
-              setCommentText(`@${comment.profiles?.full_name} `);
-            }}>
-              <Text className="text-xs font-bold text-zalo-blue">Phản hồi</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-      {comment.children.map(child => (
-        <CommentItem key={child.id} comment={child} level={level + 1} />
-      ))}
-    </View>
-  );
-
   const renderHeader = () => (
     <View 
-      className="px-6 pb-4 bg-[#f2f2f7] dark:bg-black"
-      style={{ paddingTop: insets.top + 10 }}
+      className="px-6 pb-4"
+      style={{ paddingTop: insets.top + 10, backgroundColor: colors.bg }}
     >
       <View className="flex-row items-center">
         <TouchableOpacity onPress={() => navigation.goBack()} className="w-11 h-11 rounded-full items-center justify-center -ml-2.5">
           <Ionicons name="chevron-back" size={26} color={colors?.text || '#000'} />
         </TouchableOpacity>
-        <Text className="flex-1 text-[22px] font-extrabold tracking-tight text-black dark:text-white">Bình luận</Text>
+        <Text className="flex-1 text-[22px] font-extrabold tracking-tight" style={{ color: colors.text }}>Bình luận</Text>
         <View className="flex-row items-center gap-2">
-          <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center bg-gray-200/80 dark:bg-zalo-darkInput/80 ml-2">
+          <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center ml-2" style={{ backgroundColor: colors.bgInput }}>
             <MaterialCommunityIcons name="comment-text-multiple-outline" size={22} color={colors?.text || '#000'} />
           </TouchableOpacity>
-          <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center bg-gray-200/80 dark:bg-zalo-darkInput/80 ml-2">
+          <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center ml-2" style={{ backgroundColor: colors.bgInput }}>
             <MaterialCommunityIcons name="dots-horizontal" size={24} color={colors?.text || '#000'} />
           </TouchableOpacity>
         </View>
@@ -150,7 +93,7 @@ export default function PostDetailScreen({ route, navigation }) {
       <View className="w-20 h-20 rounded-3xl items-center justify-center mb-4 bg-zalo-blue/15">
         <MaterialCommunityIcons name="comment-outline" size={48} color={colors?.accent || '#0068ff'} />
       </View>
-      <Text className="text-[17px] font-extrabold mb-1.5 text-black dark:text-white">Chưa có bình luận</Text>
+      <Text className="text-[17px] font-extrabold mb-1.5" style={{ color: colors.text }}>Chưa có bình luận</Text>
       <View className="flex-row items-center">
         <Text className="text-sm font-medium text-gray-400">Hãy là người đầu tiên </Text>
         <TouchableOpacity>
@@ -161,7 +104,7 @@ export default function PostDetailScreen({ route, navigation }) {
   );
 
   return (
-    <View className="flex-1 bg-[#f2f2f7] dark:bg-black">
+    <View className="flex-1" style={{ backgroundColor: colors.bg }}>
       {renderHeader()}
       
       <KeyboardAvoidingView 
@@ -185,16 +128,16 @@ export default function PostDetailScreen({ route, navigation }) {
           </View>
 
           {/* Comments Section */}
-          <View className="mx-3 rounded-[32px] p-6 shadow-sm bg-white dark:bg-zalo-darkCard">
-            <Text className="text-lg font-extrabold mb-5 tracking-tight text-black dark:text-white">Mọi người nói gì</Text>
+          <View className="mx-3 rounded-[32px] p-6 shadow-sm" style={{ backgroundColor: colors.bgCard }}>
+            <Text className="text-lg font-extrabold mb-5 tracking-tight" style={{ color: colors.text }}>Mọi người nói gì</Text>
             
-            {loading ? (
+            {loadingComments ? (
               <ActivityIndicator size="small" color={colors?.accent || '#0068ff'} className="my-8" />
             ) : comments.length === 0 ? (
               renderEmptyState()
             ) : (
               nestedComments().map((comment) => (
-                <CommentItem key={comment.id} comment={comment} />
+                <CommentItem key={comment.id} comment={comment} onReply={handleReply} />
               ))
             )}
           </View>
@@ -202,13 +145,13 @@ export default function PostDetailScreen({ route, navigation }) {
 
         {/* Floating Pill Input Bar */}
         <View 
-          className="px-4 bg-[#f2f2f7] dark:bg-black border-t border-gray-200/40 dark:border-zalo-darkBorder/40 pt-2"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          className="px-4 border-t pt-2"
+          style={{ borderColor: colors.border, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bg }}
         >
           {replyTo && (
-            <View className="flex-row items-center px-4 py-2.5 rounded-2xl mb-2 justify-between border border-black/5 bg-gray-200 dark:bg-zalo-darkInput">
-              <Text className="text-[13px] flex-1 text-gray-500 dark:text-gray-400" numberOfLines={1}>
-                Trả lời <Text className="font-extrabold text-black dark:text-white">{replyTo.profiles?.full_name}</Text>
+            <View className="flex-row items-center px-4 py-2.5 rounded-2xl mb-2 justify-between border border-black/5" style={{ backgroundColor: colors.bgInput }}>
+              <Text className="text-[13px] flex-1" style={{ color: colors.textSub }} numberOfLines={1}>
+                Trả lời <Text className="font-extrabold" style={{ color: colors.text }}>{replyTo.profiles?.full_name}</Text>
               </Text>
               <TouchableOpacity onPress={() => setReplyTo(null)}>
                 <Ionicons name="close-circle" size={20} color={colors?.textMuted || '#9ca3af'} />
@@ -216,13 +159,14 @@ export default function PostDetailScreen({ route, navigation }) {
             </View>
           )}
           
-          <View className="flex-row items-center rounded-full px-2 py-2 mb-2 shadow-lg bg-white dark:bg-zalo-darkCard">
+          <View className="flex-row items-center rounded-full px-2 py-2 mb-2 shadow-lg" style={{ backgroundColor: colors.bgCard }}>
             <TouchableOpacity className="p-2">
               <MaterialCommunityIcons name="emoticon-happy-outline" size={24} color={colors?.text || '#000'} />
             </TouchableOpacity>
             
             <TextInput
-              className="flex-1 text-[15px] px-3 max-h-[100px] font-medium text-black dark:text-white"
+              className="flex-1 text-[15px] px-3 max-h-[100px] font-medium"
+              style={{ color: colors.text }}
               placeholder="Nhập bình luận của bạn..."
               placeholderTextColor={colors?.textMuted || '#9ca3af'}
               value={commentText}
@@ -237,7 +181,7 @@ export default function PostDetailScreen({ route, navigation }) {
             <TouchableOpacity 
               className={`w-10 h-10 rounded-full items-center justify-center ml-1 bg-zalo-blue ${!commentText.trim() ? 'opacity-50' : ''}`}
               onPress={() => handleSendComment(replyTo?.id)}
-              disabled={!commentText.trim() || isSending}
+              disabled={!commentText.trim() || addCommentMutation.isPending}
             >
               <Ionicons name="send" size={18} color="#FFF" />
             </TouchableOpacity>

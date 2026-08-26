@@ -3,52 +3,56 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MenuControl from '@/base/components/MenuControl';
 import { REACTIONS } from '@/base/shared/enums/postEnums';
-import { handleReaction } from '@/base/services/postService';
+import { useToggleLikeMutation } from '@/base/services/queries';
 
 export default function PostActions({ item, colors, onReactionUpdate, onCommentPress, isDetail }) {
   const [localLiked, setLocalLiked] = useState(item.is_liked);
   const [reactionType, setReactionType] = useState(item.user_reaction || 'heart');
   const [showPicker, setShowPicker] = useState(false);
   const likeBtnRef = useRef(null);
+  const toggleLikeMutation = useToggleLikeMutation();
 
   useEffect(() => {
     setLocalLiked(item.is_liked);
     setReactionType(item.user_reaction || 'heart');
   }, [item.is_liked, item.user_reaction]);
 
-  const handleLike = async () => {
+  const handleLike = () => {
     const newLikedState = !localLiked;
     const type = newLikedState ? 'heart' : reactionType;
-    const oldLiked = localLiked;
-    const oldType = reactionType;
 
     setLocalLiked(newLikedState);
     if (newLikedState) setReactionType('heart');
     if (onReactionUpdate) onReactionUpdate(newLikedState, type);
 
-    const res = await handleReaction(item.id, type);
-    if (!res.success) {
-      setLocalLiked(oldLiked);
-      setReactionType(oldType);
-      if (onReactionUpdate) onReactionUpdate(oldLiked, oldType);
-    }
+    toggleLikeMutation.mutate(
+      { postId: item.id, reactionType: type },
+      {
+        onError: () => {
+          setLocalLiked(localLiked);
+          setReactionType(reactionType);
+          if (onReactionUpdate) onReactionUpdate(localLiked, reactionType);
+        },
+      }
+    );
   };
 
-  const onSelectReaction = async (type) => {
+  const onSelectReaction = (type) => {
     setShowPicker(false);
-    const oldLiked = localLiked;
-    const oldType = reactionType;
-
     setLocalLiked(true);
     setReactionType(type);
     if (onReactionUpdate) onReactionUpdate(true, type);
 
-    const res = await handleReaction(item.id, type);
-    if (!res.success) {
-      setLocalLiked(oldLiked);
-      setReactionType(oldType);
-      if (onReactionUpdate) onReactionUpdate(oldLiked, oldType);
-    }
+    toggleLikeMutation.mutate(
+      { postId: item.id, reactionType: type },
+      {
+        onError: () => {
+          setLocalLiked(localLiked);
+          setReactionType(reactionType);
+          if (onReactionUpdate) onReactionUpdate(localLiked, reactionType);
+        },
+      }
+    );
   };
 
   return (
@@ -118,7 +122,7 @@ export default function PostActions({ item, colors, onReactionUpdate, onCommentP
           <TouchableOpacity 
             className="flex-1 flex-row items-center justify-center py-2.5 rounded-full gap-1"
             style={{ backgroundColor: colors?.bgInput + '40' }} 
-            activeOpacity={0.7}
+            activeOpacity={0.7} 
           >
             <Ionicons name="share-social-outline" size={20} color={colors?.text || '#000'} />
             <Text 
